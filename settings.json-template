@@ -1,0 +1,34 @@
+{
+  "Categories": [
+    {
+      "Name": "Tutorials",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        { "Type": "Contains", "Value": "Tutorial" },
+        { "Type": "Contains", "Value": "Course" },
+        { "Type": "Contains", "Value": "Lesson" }
+      ]
+    },
+    {
+      "Name": "Gameplay_Recordings",
+      "IgnoreCategoryInContent": true,
+      "Rules": [
+        { "Type": "Regex", "Value": "^(WoW|Minecraft|Halo).*\\.mp4$" }
+      ]
+    },
+    {
+      "Name": "Last Week Tonight With John Oliver",
+      "IgnoreCategoryInContent": true,
+      "Rules": [
+        { "Type": "Regex", "Value": "Last.?Week.?Tonight" }
+      ]
+    },
+    {
+      "Name": "American Dad",
+      "IgnoreCategoryInContent": true,
+      "Rules": [ 
+        { "Type": "Regex", "Value": "American.?Dad" }
+      ]
+    }
+  ]
+}
