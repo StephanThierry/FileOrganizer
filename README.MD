@@ -50,7 +50,7 @@ The project includes: `settings.json-template` that demonstrate the format:
 Combined example:
 * `\\d{4}p.*\\.mp4$` → Would match: "Something.1080p.HD.mp4" or "Any title.2160p.BluRay.mp4"
 
-This rule is last so it works as a catch all of all HD/4K videos not being mapped by and previous rules.  
+This rule is last so it works as a catch-all of  HD/4K videos not being mapped by any previous rules.  
 
 ```json
 {
