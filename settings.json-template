@@ -11,23 +11,37 @@
     },
     {
       "Name": "Gameplay_Recordings",
-      "IgnoreCategoryInContent": true,
+      "IgnoreCategoryInContent": false,
       "Rules": [
         { "Type": "Regex", "Value": "^(WoW|Minecraft|Halo).*\\.mp4$" }
       ]
     },
     {
       "Name": "Last Week Tonight With John Oliver",
-      "IgnoreCategoryInContent": true,
+      "IgnoreCategoryInContent": false,
       "Rules": [
         { "Type": "Regex", "Value": "Last.?Week.?Tonight" }
       ]
     },
     {
-      "Name": "American Dad",
+      "Name": "Barry",
       "IgnoreCategoryInContent": true,
+      "Rules": [
+        { "Type": "Regex", "Value": "^Barry.*\\.mp4$" }
+      ]
+    },
+    {
+      "Name": "American Dad",
+      "IgnoreCategoryInContent": false,
       "Rules": [ 
         { "Type": "Regex", "Value": "American.?Dad" }
+      ]
+    },
+    {
+      "Name": "HD and 4K",
+      "IgnoreCategoryInContent": false,
+      "Rules": [ 
+        { "Type": "Regex", "Value": "\\d{4}p.*\\.mp4$" }
       ]
     }
   ]

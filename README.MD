@@ -79,6 +79,13 @@ This rule is last so it works as a catch all of all HD/4K videos not being mappe
       ]
     },
     {
+      "Name": "Barry",
+      "IgnoreCategoryInContent": true,
+      "Rules": [
+        { "Type": "Regex", "Value": "^Barry.*\\.mp4$" }
+      ]
+    },
+    {
       "Name": "American Dad",
       "IgnoreCategoryInContent": false,
       "Rules": [ 
