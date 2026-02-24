@@ -116,7 +116,7 @@ Use `true` if the category name is a general word (like `Barry`) that should not
 ## How to Run
 
 1. Open a Command Prompt or PowerShell window.
-2. Execute the compiled program. You can pass the target folder you want to scan as an argument.
+2. Build and execute the compiled program. Or use the dotnet cli to run. Pass the target folder as an argument.
 
 **To scan a specific folder:**
 Build exe and run:  
