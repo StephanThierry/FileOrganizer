@@ -453,12 +453,20 @@ private void GenerateRenameBatFile(List<RenameAction> actions)
         {
             // If the file format isn't supported (like a .txt file) 
             // or the header is corrupt, just return empty strings.
+            Console.WriteLine($"Warning: Unsupported format for '{FullFilePath}'. Exception: {unsupported.Message}");
             return ("", "");
         } catch(TagLib.CorruptFileException corrupt)
         {
             // If the file format isn't supported (like a .txt file) 
             // or the header is corrupt, just return empty strings.
+            Console.WriteLine($"Warning: Corrupt file '{FullFilePath}'. Exception: {corrupt.Message}");
             return (PossiblyCorruptCategory, "");
+        }        
+        catch(Exception ex)
+        {
+            // catch all other exceptions to prevent the program from crashing on unexpected file types
+            Console.WriteLine($"Warning: Could not read metadata for '{FullFilePath}'. Exception: {ex.Message}");
+            return ("", "");
         }
     }    
 }
