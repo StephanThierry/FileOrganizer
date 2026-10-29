@@ -3,7 +3,7 @@
 ## What it does
 This program is an automated, non-destructive file sorting and renaming utility. It analyzes files in a target directory and categorizes them based on filenames, internal metadata (Title/Comments), and **Optical Character Recognition (OCR) extracted directly from video frames**. 
 
-Instead of moving or renaming files automatically, it generates scripts: Windows Batch (`.bat`) files on Windows and shell (`.sh`) scripts on Linux/macOS. This allows you to review the proposed changes before executing them.
+Instead of moving or renaming files automatically, it generates scripts: PowerShell (`.ps1`) scripts on Windows and shell (`.sh`) scripts on Linux/macOS. This allows you to review the proposed changes before executing them.
 
 ## Features
 - Multi-stage matching priority:  
@@ -19,8 +19,8 @@ The processor evaluates every file in the target folder using a 3-step deep scan
 3. **Video OCR Deep Scan:** For video files (`.mp4`, `.mkv`, etc.), it extracts sample frames across the video and reads on-screen text (logos, website watermarks, titles) using PaddleOCR's PP-OCRv5 models running locally on ONNX Runtime ([RapidOCRSharpOnnx](https://github.com/meloht/RapidOCRSharpOnnx)). This works on Windows, Linux and macOS. The extracted text is then checked against your rules.
 
 **Outputs Generated:**
-* `move_files.bat` / `move_files.sh`: A script to move files into categorized subfolders.
-* `rename_files.bat` / `rename_files.sh`: A script to rename files based on discovered Title/Comment metadata.
+* `move_files.ps1` / `move_files.sh`: A script to move files into categorized subfolders.
+* `rename_files.ps1` / `rename_files.sh`: A script to rename files based on discovered Title/Comment metadata.
 * `unmatched_files.txt`: A report of files that matched zero rules, including the text the OCR engine found, so you can update your rules.
 * `_FileProcessor_VideoOcrResult.json`: A local cache to speed up future runs by remembering previously scanned video OCR data.
 
@@ -151,13 +151,15 @@ dotnet run -- "/path/to/your/files"
 ### Applying the Changes
 Once the program finishes running, look in your target folder.
 1. Review `unmatched_files.txt` to see what was missed and adjust your `settings.json` if needed.
-2. First review and remove all non-relevant entries. Run `rename_files.bat` (Windows) or `./rename_files.sh` (Linux) to apply metadata-based file renaming.
-3. Run `move_files.bat` (Windows) or `./move_files.sh` (Linux) to create the category folders and move your files into them.  
+2. First review and remove all non-relevant entries. Run `rename_files.ps1` (Windows) or `./rename_files.sh` (Linux) to apply metadata-based file renaming.
+3. Run `move_files.ps1` (Windows) or `./move_files.sh` (Linux) to create the category folders and move your files into them.  
 
-```cmd
-move_files.bat
+**Windows** (PowerShell scripts are blocked by default, so start them like this):
+```powershell
+powershell -ExecutionPolicy Bypass -File .\move_files.ps1
 ```
+**Linux:**
 ```bash
 ./move_files.sh
 ```
-The Linux scripts use `mv -n`, so they never overwrite an existing file.
+The scripts never overwrite an existing file. The Windows scripts are PowerShell rather than `.bat`, because `.bat` files can't run from a network folder that isn't mapped to a drive letter (`\\nas\share\...`). They also handle file names with `%`, `[ ]`, `'`, `’` and `æøå`.
