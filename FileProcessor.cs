@@ -18,9 +18,10 @@ public class FileProcessor : IDisposable
     private VideoTextReader? _textReader; // created on first video, reused for all frames
     private const string PossiblyCorruptCategory = "_CHECK_";
 
-    // Windows gets .bat scripts, Linux/macOS get .sh scripts
+    // Windows gets PowerShell (.ps1) scripts, Linux/macOS get .sh scripts.
+    // (Not .bat: cmd.exe can't use an unmapped UNC path like \\nas\share as its current folder.)
     private static readonly bool IsWindows = OperatingSystem.IsWindows();
-    private static readonly string ScriptExtension = IsWindows ? ".bat" : ".sh";
+    private static readonly string ScriptExtension = IsWindows ? ".ps1" : ".sh";
 
     private readonly HashSet<string> _videoExtensions = new(StringComparer.OrdinalIgnoreCase) 
         { ".mp4", ".mpeg", ".mpv", ".flv", ".mkv", ".avi", ".mov", ".wmv" };
@@ -42,7 +43,7 @@ public class FileProcessor : IDisposable
         _ignoredFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
             "settings.json", "unmatched_files.txt",
-            "move_files.bat", "rename_files.bat", "move_files.sh", "rename_files.sh",
+            "move_files.bat", "rename_files.bat", "move_files.ps1", "rename_files.ps1", "move_files.sh", "rename_files.sh",
             Path.GetFileName(_ocrCachePath),
             AppDomain.CurrentDomain.FriendlyName,          // Linux/macOS executable has no extension
             AppDomain.CurrentDomain.FriendlyName + ".exe",
@@ -311,52 +312,45 @@ private bool IsMostlyJunk(string s)
 
     private void GenerateBatFile(List<MoveAction> actions)
     {
-        // Use UTF8 encoding with a Byte Order Mark (BOM) so Windows recognizes it; no BOM for sh
-        var encoding = new System.Text.UTF8Encoding(IsWindows);
-
-        using var writer = new StreamWriter(_batPath, false, encoding);
-        if (!IsWindows) writer.NewLine = "\n";
-
-        WriteScriptHeader(writer);
+        using var writer = CreateScript(_batPath);
 
         // Create directories
         foreach (var cat in actions.Select(a => a.CategoryName).Distinct())
         {
             writer.WriteLine(IsWindows
-                ? $"IF NOT EXIST {BatQuote(cat)} mkdir {BatQuote(cat)}"
+                ? $"[System.IO.Directory]::CreateDirectory((P {PsQuote(cat)})) | Out-Null"
                 : $"mkdir -p -- {ShQuote(cat)}");
         }
 
         writer.WriteLine();
-        writer.WriteLine(IsWindows ? "REM --- Moving Files ---" : "# --- Moving Files ---");
+        writer.WriteLine("# --- Moving Files ---");
         foreach (var act in actions)
         {
-            if (IsWindows)
-            {
-                writer.WriteLine($"move {BatQuote(act.FileName)} \"{act.CategoryName.Replace("%", "%%")}\\\"");
-                writer.WriteLine($"REM Triggered: {act.RuleTriggered}");
-            }
-            else
-            {
-                writer.WriteLine($"mv -n -- {ShQuote(act.FileName)} {ShQuote(act.CategoryName + "/")}");
-                writer.WriteLine($"# Triggered: {act.RuleTriggered.Replace('\n', ' ')}");
-            }
+            // Never overwrites: File.Move and mv -n both leave an existing file in place
+            writer.WriteLine(IsWindows
+                ? $"[System.IO.File]::Move((P {PsQuote(act.FileName)}), (P {PsQuote(act.CategoryName)} {PsQuote(act.FileName)}))"
+                : $"mv -n -- {ShQuote(act.FileName)} {ShQuote(act.CategoryName + "/")}");
+            writer.WriteLine($"# Triggered: {act.RuleTriggered.Replace('\r', ' ').Replace('\n', ' ')}");
         }
 
         MakeExecutable(_batPath);
     }
 
-    // --- Script helpers (Windows .bat vs Linux/macOS .sh) ---
+    // --- Script helpers (Windows .ps1 vs Linux/macOS .sh) ---
 
-    private static void WriteScriptHeader(StreamWriter writer)
+    private static StreamWriter CreateScript(string path)
     {
+        // .ps1: UTF-8 with BOM, or Windows PowerShell 5.1 reads æ/ø/å and ’ – as ANSI. .sh: no BOM, LF.
+        var writer = new StreamWriter(path, false, new System.Text.UTF8Encoding(IsWindows));
+        writer.NewLine = IsWindows ? "\r\n" : "\n";
+
         if (IsWindows)
         {
-            // 1. Set Code Page to UTF-8 (65001) to support special chars like ’ and –
-            // 2. Redirect to nul so the user doesn't see the "Active code page" message
-            writer.WriteLine("@echo off");
-            writer.WriteLine("chcp 65001 > nul");
-            writer.WriteLine("cd /d \"%~dp0\"");
+            writer.WriteLine($"# Run with:  powershell -ExecutionPolicy Bypass -File \"{Path.GetFileName(path)}\"");
+            writer.WriteLine("$ErrorActionPreference = 'Continue'");
+            writer.WriteLine("# Paths are relative to this script's folder - works for UNC paths (\\\\server\\share) too");
+            writer.WriteLine("$here = $PSScriptRoot");
+            writer.WriteLine("function P([string]$a, [string]$b = '') { if ($b) { [System.IO.Path]::Combine($here, $a, $b) } else { [System.IO.Path]::Combine($here, $a) } }");
         }
         else
         {
@@ -364,10 +358,13 @@ private bool IsMostlyJunk(string s)
             writer.WriteLine("cd \"$(dirname \"$0\")\" || exit 1");
         }
         writer.WriteLine();
+        return writer;
     }
 
-    // ESCAPE PERCENT SIGNS: % must be written as %% in batch files
-    private static string BatQuote(string s) => "\"" + s.Replace("%", "%%") + "\"";
+    // Single quotes are literal in PowerShell ($ ` [ ] % are not special). PowerShell also treats the
+    // typographic quotes ‘ ’ ‚ ‛ as single quotes, so each of them is doubled like ' to stay literal.
+    private static string PsQuote(string s) =>
+        "'" + System.Text.RegularExpressions.Regex.Replace(s, "['\u2018\u2019\u201A\u201B]", m => m.Value + m.Value) + "'";
 
     // Single quotes keep everything literal in sh; a ' inside is written as '\''
     private static string ShQuote(string s) => "'" + s.Replace("'", "'\\''") + "'";
@@ -425,30 +422,18 @@ private void GenerateRenameBatFile(List<RenameAction> actions)
 {
     if (!actions.Any()) return;
 
-    var encoding = new System.Text.UTF8Encoding(IsWindows);
-
-    using (var writer = new StreamWriter(_renameScriptPath, false, encoding))
+    using (var writer = CreateScript(_renameScriptPath))
     {
-        if (!IsWindows) writer.NewLine = "\n";
-
-        WriteScriptHeader(writer);
-        writer.WriteLine(IsWindows
-            ? "REM === Auto-generated Rename Script (Title/Comment) ==="
-            : "# === Auto-generated Rename Script (Title/Comment) ===");
+        writer.WriteLine("# === Auto-generated Rename Script (Title/Comment) ===");
         writer.WriteLine();
 
         foreach (var action in actions)
         {
-            if (IsWindows)
-            {
-                writer.WriteLine($"ren {BatQuote(action.OldFileName)} {BatQuote(action.NewFileName)}");
-                writer.WriteLine($"REM Source: {action.SourceField}\n");
-            }
-            else
-            {
-                writer.WriteLine($"mv -n -- {ShQuote(action.OldFileName)} {ShQuote(action.NewFileName)}");
-                writer.WriteLine($"# Source: {action.SourceField}\n");
-            }
+            writer.WriteLine(IsWindows
+                ? $"[System.IO.File]::Move((P {PsQuote(action.OldFileName)}), (P {PsQuote(action.NewFileName)}))"
+                : $"mv -n -- {ShQuote(action.OldFileName)} {ShQuote(action.NewFileName)}");
+            writer.WriteLine($"# Source: {action.SourceField}");
+            writer.WriteLine();
         }
     }
 
