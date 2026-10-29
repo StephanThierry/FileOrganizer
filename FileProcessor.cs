@@ -6,18 +6,21 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using OpenCvSharp;
-using Windows.Graphics.Imaging;
-using Windows.Media.Ocr;
-using Windows.Storage.Streams;
 
-public class FileProcessor
+public class FileProcessor : IDisposable
 {
     private readonly string _targetFolder;
     private readonly string _settingsPath;
     private readonly string _batPath;
     private readonly string _unmatchedPath;
     private readonly string _ocrCachePath;
+    private readonly string _renameScriptPath;
+    private VideoTextReader? _textReader; // created on first video, reused for all frames
     private const string PossiblyCorruptCategory = "_CHECK_";
+
+    // Windows gets .bat scripts, Linux/macOS get .sh scripts
+    private static readonly bool IsWindows = OperatingSystem.IsWindows();
+    private static readonly string ScriptExtension = IsWindows ? ".bat" : ".sh";
 
     private readonly HashSet<string> _videoExtensions = new(StringComparer.OrdinalIgnoreCase) 
         { ".mp4", ".mpeg", ".mpv", ".flv", ".mkv", ".avi", ".mov", ".wmv" };
@@ -28,7 +31,8 @@ public class FileProcessor
     {
         _targetFolder = targetFolder;
         _settingsPath = settingsPath;
-        _batPath = Path.Combine(targetFolder, "move_files.bat");
+        _batPath = Path.Combine(targetFolder, "move_files" + ScriptExtension);
+        _renameScriptPath = Path.Combine(targetFolder, "rename_files" + ScriptExtension);
         _ocrCachePath = Path.Combine(targetFolder, "_FileProcessor_VideoOcrResult.json");
         _unmatchedPath = Path.Combine(targetFolder, "unmatched_files.txt");
 
@@ -37,13 +41,18 @@ public class FileProcessor
 
         _ignoredFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
-            "settings.json", "move_files.bat", "unmatched_files.txt",
+            "settings.json", "unmatched_files.txt",
+            "move_files.bat", "rename_files.bat", "move_files.sh", "rename_files.sh",
+            Path.GetFileName(_ocrCachePath),
+            AppDomain.CurrentDomain.FriendlyName,          // Linux/macOS executable has no extension
             AppDomain.CurrentDomain.FriendlyName + ".exe",
             AppDomain.CurrentDomain.FriendlyName + ".dll"
         };
     }
 
-    public async Task RunAsync()
+    public void Dispose() => _textReader?.Dispose();
+
+    public void Run()
     {
         var settings = LoadSettings();
         if (settings?.Categories == null) return;
@@ -122,7 +131,7 @@ public class FileProcessor
                 else
                 {
                     Console.WriteLine($"[Deep Scan] {file}...");
-                    ocrResult = await GetVideoOcrTextAsync(Path.Combine(_targetFolder, file!));
+                    ocrResult = GetVideoOcrText(Path.Combine(_targetFolder, file!));
                     // UPDATE CACHE: Store new result
                     ocrCache[file!] = ocrResult;
                     SaveOcrCache(ocrCache);
@@ -157,8 +166,7 @@ public class FileProcessor
                 unmatchedData.Add(new UnmatchedFileInfo(file!, new List<string>(), title ?? "", comments ?? ""));
             }
 
-            // No Match - Save file + all detected OCR text
-           unmatchedData.Add(new UnmatchedFileInfo(file!, new List<string>(), title ?? "", comments ?? ""));
+            // No Match (already added to unmatchedData above, with any detected OCR text)
            Console.WriteLine($"[Unmatched] {file}");
            
         }
@@ -231,9 +239,15 @@ private Dictionary<string, VideoOcrResult> LoadOcrCache()
         return false;
     }
 
-    private async Task<VideoOcrResult> GetVideoOcrTextAsync(string path)
+    private VideoOcrResult GetVideoOcrText(string path)
 {
     var result = new VideoOcrResult();
+
+    // Load the OCR models once (first video only), then reuse them for every frame.
+    // Kept outside the try below, so a model problem stops the run instead of
+    // marking every video as corrupt.
+    _textReader ??= new VideoTextReader(Path.Combine(AppContext.BaseDirectory, "models"));
+
     try
     {
         using var capture = new VideoCapture(path, VideoCaptureAPIs.FFMPEG);
@@ -262,41 +276,17 @@ private Dictionary<string, VideoOcrResult> LoadOcrCache()
 
             validFramesRead++;
 
-            // --- PRE-PROCESSING STEP 2.0 (Noise Reduction Focus) ---
-            
-            using Mat gray = new Mat();
-            Cv2.CvtColor(frame, gray, ColorConversionCodes.BGR2GRAY);
-
-            // 1. Upscale for better character definition
-            using Mat resized = new Mat();
-            Cv2.Resize(gray, resized, new OpenCvSharp.Size(gray.Width * 2, gray.Height * 2), interpolation: InterpolationFlags.Cubic);
-
-            // 2. Bilateral Filter: This is the "Magic" for noise.
-            // It smooths flat areas (noise) but keeps the edges of text sharp.
-            using Mat denoised = new Mat();
-            Cv2.BilateralFilter(resized, denoised, d: 9, sigmaColor: 75, sigmaSpace: 75);
-
-            // 3. CLAHE for local contrast (brings out the "Angelo Godshack" text)
-            using Mat finalProcessed = new Mat();
-            using (var clahe = Cv2.CreateCLAHE(clipLimit: 3.0, tileGridSize: new OpenCvSharp.Size(8, 8)))
+            // No pre-processing: PP-OCR works best on the original colour frame.
+            // (The old grayscale/upscale/bilateral/CLAHE steps were tuned for Windows OCR,
+            // and the bilateral filter on a 2x upscaled frame was a large part of the time per frame.)
+            // Low-resolution frames are upscaled automatically by the text detector.
+            foreach (var line in _textReader.ReadLines(frame).Where(l => l.Length > 2))
             {
-                clahe.Apply(denoised, finalProcessed);
-            }
+                // Basic junk filter (ignores lines that are just symbols)
+                if (IsMostlyJunk(line)) continue;
 
-            // NOTE: We are NOT using AdaptiveThreshold here because it creates the symbol noise.
-            // Windows OCR often performs better on a clean, high-contrast grayscale image.
-
-            string text = await RunWindowsMediaOcr(finalProcessed);
-            
-            foreach (var line in text.Split('\n', '\r').Where(l => l.Trim().Length > 2))
-            {
-                string cleanLine = line.Trim();
-
-                // OPTIONAL: Basic junk filter (ignores lines that are just symbols)
-                if (IsMostlyJunk(cleanLine)) continue;
-
-                Console.WriteLine($"  OCR detection: {cleanLine}");
-                result.Lines.Add(cleanLine);
+                Console.WriteLine($"  OCR detection: {line}");
+                result.Lines.Add(line);
             }
         }
 
@@ -319,53 +309,80 @@ private bool IsMostlyJunk(string s)
     return (double)alphaNumericCount / s.Length < 0.3; 
 }
 
-    private async Task<string> RunWindowsMediaOcr(Mat mat)
-    {
-        byte[] bytes = mat.ImEncode(".png");
-        using var stream = new InMemoryRandomAccessStream();
-        using (var writer = new DataWriter(stream.GetOutputStreamAt(0)))
-        {
-            writer.WriteBytes(bytes);
-            await writer.StoreAsync();
-        }
-        var decoder = await BitmapDecoder.CreateAsync(stream);
-        var bitmap = await decoder.GetSoftwareBitmapAsync(BitmapPixelFormat.Bgra8, BitmapAlphaMode.Premultiplied);
-        var engine = OcrEngine.TryCreateFromUserProfileLanguages() ?? OcrEngine.TryCreateFromLanguage(new Windows.Globalization.Language("en-US"));
-        var ocrResult = await engine.RecognizeAsync(bitmap);
-        return ocrResult.Text;
-    }
-
     private void GenerateBatFile(List<MoveAction> actions)
     {
-        // Use UTF8 encoding with a Byte Order Mark (BOM) so Windows recognizes it
-        var utf8WithBom = new System.Text.UTF8Encoding(true);
+        // Use UTF8 encoding with a Byte Order Mark (BOM) so Windows recognizes it; no BOM for sh
+        var encoding = new System.Text.UTF8Encoding(IsWindows);
 
-        using var writer = new StreamWriter(_batPath, false, utf8WithBom);
-        
-        // 1. Set Code Page to UTF-8 (65001) to support special chars like ’ and –
-        // 2. Clear the screen or redirect to nul so the user doesn't see the "Active code page" message
-        writer.WriteLine("@echo off");
-        writer.WriteLine("chcp 65001 > nul"); 
-        writer.WriteLine("cd /d \"%~dp0\"");
-        writer.WriteLine();
+        using var writer = new StreamWriter(_batPath, false, encoding);
+        if (!IsWindows) writer.NewLine = "\n";
+
+        WriteScriptHeader(writer);
 
         // Create directories
         foreach (var cat in actions.Select(a => a.CategoryName).Distinct())
         {
-            // Escape % in directory names too
-            string safeCat = cat.Replace("%", "%%");
-            writer.WriteLine($"IF NOT EXIST \"{safeCat}\" mkdir \"{safeCat}\"");
+            writer.WriteLine(IsWindows
+                ? $"IF NOT EXIST {BatQuote(cat)} mkdir {BatQuote(cat)}"
+                : $"mkdir -p -- {ShQuote(cat)}");
         }
 
-        writer.WriteLine("\nREM --- Moving Files ---");
+        writer.WriteLine();
+        writer.WriteLine(IsWindows ? "REM --- Moving Files ---" : "# --- Moving Files ---");
         foreach (var act in actions)
         {
-            // ESCAPE PERCENT SIGNS: % must be written as %% in batch files
-            string safeFileName = act.FileName.Replace("%", "%%");
-            string safeCategory = act.CategoryName.Replace("%", "%%");
+            if (IsWindows)
+            {
+                writer.WriteLine($"move {BatQuote(act.FileName)} \"{act.CategoryName.Replace("%", "%%")}\\\"");
+                writer.WriteLine($"REM Triggered: {act.RuleTriggered}");
+            }
+            else
+            {
+                writer.WriteLine($"mv -n -- {ShQuote(act.FileName)} {ShQuote(act.CategoryName + "/")}");
+                writer.WriteLine($"# Triggered: {act.RuleTriggered.Replace('\n', ' ')}");
+            }
+        }
 
-            writer.WriteLine($"move \"{safeFileName}\" \"{safeCategory}\\\"");
-            writer.WriteLine($"REM Triggered: {act.RuleTriggered}");
+        MakeExecutable(_batPath);
+    }
+
+    // --- Script helpers (Windows .bat vs Linux/macOS .sh) ---
+
+    private static void WriteScriptHeader(StreamWriter writer)
+    {
+        if (IsWindows)
+        {
+            // 1. Set Code Page to UTF-8 (65001) to support special chars like ’ and –
+            // 2. Redirect to nul so the user doesn't see the "Active code page" message
+            writer.WriteLine("@echo off");
+            writer.WriteLine("chcp 65001 > nul");
+            writer.WriteLine("cd /d \"%~dp0\"");
+        }
+        else
+        {
+            writer.WriteLine("#!/bin/sh");
+            writer.WriteLine("cd \"$(dirname \"$0\")\" || exit 1");
+        }
+        writer.WriteLine();
+    }
+
+    // ESCAPE PERCENT SIGNS: % must be written as %% in batch files
+    private static string BatQuote(string s) => "\"" + s.Replace("%", "%%") + "\"";
+
+    // Single quotes keep everything literal in sh; a ' inside is written as '\''
+    private static string ShQuote(string s) => "'" + s.Replace("'", "'\\''") + "'";
+
+    private static void MakeExecutable(string path)
+    {
+        if (OperatingSystem.IsWindows()) return;
+        try
+        {
+            File.SetUnixFileMode(path, File.GetUnixFileMode(path)
+                | UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Warning: could not mark {path} as executable: {ex.Message}");
         }
     }
 
@@ -408,28 +425,35 @@ private void GenerateRenameBatFile(List<RenameAction> actions)
 {
     if (!actions.Any()) return;
 
-    string renameBatPath = Path.Combine(_targetFolder, "rename_files.bat");
-    var utf8WithBom = new System.Text.UTF8Encoding(true);
+    var encoding = new System.Text.UTF8Encoding(IsWindows);
 
-    using var writer = new StreamWriter(renameBatPath, false, utf8WithBom);
-    
-    writer.WriteLine("@echo off");
-    writer.WriteLine("chcp 65001 > nul");
-    writer.WriteLine("cd /d \"%~dp0\"");
-    writer.WriteLine("REM === Auto-generated Rename Script (Title/Comment) ===");
-    writer.WriteLine();
-
-    foreach (var action in actions)
+    using (var writer = new StreamWriter(_renameScriptPath, false, encoding))
     {
-        // Escape % for batch
-        string oldFile = action.OldFileName.Replace("%", "%%");
-        string newFile = action.NewFileName.Replace("%", "%%");
+        if (!IsWindows) writer.NewLine = "\n";
 
-        writer.WriteLine($"ren \"{oldFile}\" \"{newFile}\"");
-        writer.WriteLine($"REM Source: {action.SourceField}\n");
+        WriteScriptHeader(writer);
+        writer.WriteLine(IsWindows
+            ? "REM === Auto-generated Rename Script (Title/Comment) ==="
+            : "# === Auto-generated Rename Script (Title/Comment) ===");
+        writer.WriteLine();
+
+        foreach (var action in actions)
+        {
+            if (IsWindows)
+            {
+                writer.WriteLine($"ren {BatQuote(action.OldFileName)} {BatQuote(action.NewFileName)}");
+                writer.WriteLine($"REM Source: {action.SourceField}\n");
+            }
+            else
+            {
+                writer.WriteLine($"mv -n -- {ShQuote(action.OldFileName)} {ShQuote(action.NewFileName)}");
+                writer.WriteLine($"# Source: {action.SourceField}\n");
+            }
+        }
     }
-    
-    Console.WriteLine($"Generated 'rename_files.bat' with {actions.Count} commands.");
+
+    MakeExecutable(_renameScriptPath);
+    Console.WriteLine($"Generated '{Path.GetFileName(_renameScriptPath)}' with {actions.Count} commands.");
 }    
     private Settings? LoadSettings()
     {

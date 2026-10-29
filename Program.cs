@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using System.Threading.Tasks;
 
 // 1. Setup paths
 string targetFolder = args.Length > 0 ? args[0] : Directory.GetCurrentDirectory();
@@ -25,9 +24,9 @@ if (!File.Exists(settingsFile))
 }
 
 // 2. Initialize and Run Processor
-var processor = new FileProcessor(targetFolder, settingsFile);
+using var processor = new FileProcessor(targetFolder, settingsFile);
 
 Console.WriteLine($"Starting scan in: {targetFolder}");
-await processor.RunAsync();
+processor.Run();
 
 Console.WriteLine("\nProcessing Complete.");
