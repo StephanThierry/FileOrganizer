@@ -132,7 +132,9 @@ public class FileProcessor : IDisposable
                 else
                 {
                     Console.WriteLine($"[Deep Scan] {file}...");
-                    ocrResult = GetVideoOcrText(Path.Combine(_targetFolder, file!));
+                    // Stops reading frames as soon as one frame has text that matches a rule
+                    ocrResult = GetVideoOcrText(Path.Combine(_targetFolder, file!),
+                                                line => TryMatch(line, settings, out _));
                     // UPDATE CACHE: Store new result
                     ocrCache[file!] = ocrResult;
                     SaveOcrCache(ocrCache);
@@ -240,7 +242,8 @@ private Dictionary<string, VideoOcrResult> LoadOcrCache()
         return false;
     }
 
-    private VideoOcrResult GetVideoOcrText(string path)
+    /// <param name="isMatch">Checked for every OCR line; frame scanning stops after the first frame with a match.</param>
+    private VideoOcrResult GetVideoOcrText(string path, Func<string, bool> isMatch)
 {
     var result = new VideoOcrResult();
 
@@ -281,6 +284,7 @@ private Dictionary<string, VideoOcrResult> LoadOcrCache()
             // (The old grayscale/upscale/bilateral/CLAHE steps were tuned for Windows OCR,
             // and the bilateral filter on a 2x upscaled frame was a large part of the time per frame.)
             // Low-resolution frames are upscaled automatically by the text detector.
+            bool frameMatched = false;
             foreach (var line in _textReader.ReadLines(frame).Where(l => l.Length > 2))
             {
                 // Basic junk filter (ignores lines that are just symbols)
@@ -288,6 +292,13 @@ private Dictionary<string, VideoOcrResult> LoadOcrCache()
 
                 Console.WriteLine($"  OCR detection: {line}");
                 result.Lines.Add(line);
+                if (isMatch(line)) frameMatched = true;
+            }
+
+            if (frameMatched)
+            {
+                Console.WriteLine($"  OCR match at {t:0.#}s - skipping remaining frames");
+                break;
             }
         }
 
