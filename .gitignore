@@ -376,3 +376,5 @@ test:.cs
 *.tempLog.xml
 *.testResults.xml
 *.testStats.csv
+move_files.bat
+unmatched_files.txt
