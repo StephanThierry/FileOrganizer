@@ -10,7 +10,11 @@ namespace FileOrganizer.Desktop.ViewModels;
 public sealed record RecentFolder(string Path, IRelayCommand Command, IRelayCommand Remove);
 
 /// <summary>A picture of a video that was read during the scan; clicking it plays the video.</summary>
-public sealed record ScanThumb(Bitmap Image, string VideoPath, IRelayCommand Play);
+public sealed record ScanThumb(Bitmap Image, string VideoPath, IRelayCommand Play)
+{
+    /// <summary>The file name, shown when the pointer rests on the picture.</summary>
+    public string Name => Path.GetFileName(VideoPath);
+}
 
 public partial class ScanViewModel : ViewModelBase
 {

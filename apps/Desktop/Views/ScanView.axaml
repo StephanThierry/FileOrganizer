@@ -118,7 +118,7 @@
                     <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="3"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                       <DataTemplate x:DataType="vm:ScanThumb">
-                        <Button Classes="thumbbtn" Command="{Binding Play}" ToolTip.Tip="Play this video" AutomationProperties.Name="Play this video">
+                        <Button Classes="thumbbtn" Command="{Binding Play}" ToolTip.Tip="{Binding Name}" AutomationProperties.Name="{Binding Name}">
                           <Panel>
                             <Image Source="{Binding Image}" Width="150" Height="100" Stretch="UniformToFill"/>
                             <Border Classes="playbadge" Width="24" Height="24" CornerRadius="12" Margin="0,0,6,6" HorizontalAlignment="Right" VerticalAlignment="Bottom" IsHitTestVisible="False">

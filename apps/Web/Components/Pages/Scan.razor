@@ -99,7 +99,7 @@
                         <div class="recent" aria-label="Pictures of the latest videos read">
                             @foreach (var t in thumbs)
                             {
-                                <button type="button" class="thumbbtn" @onclick="() => playing = t" title="Play this video" aria-label="Play @t.Name">
+                                <button type="button" class="thumbbtn" @onclick="() => playing = t" title="@t.Name" aria-label="Play @t.Name">
                                     <img src="@t.Src" alt="" />
                                     <span class="playbadge" aria-hidden="true"><svg width="10" height="11" viewBox="0 0 10 11"><path d="M0 0v11l10-5.5z" fill="currentColor" /></svg></span>
                                 </button>
