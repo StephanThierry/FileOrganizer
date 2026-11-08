@@ -119,16 +119,7 @@
     </div>
 }
 
-@if (playing != null)
-{
-    <div class="dialog-backdrop" @onclick="() => playing = null">
-        <div class="dialog player" role="dialog" aria-modal="true" @onclick:stopPropagation="true">
-            <div class="player-head"><h2>@playing.FileName</h2><button @onclick="() => playing = null">Close</button></div>
-            <video src="media/@IndexOf(playing)" controls autoplay preload="metadata" style="width:100%;max-height:70vh;background:#000"></video>
-            <p class="muted">Browsers play mp4, webm and mov, not every format. If nothing shows, <a href="media/@IndexOf(playing)" target="_blank" rel="noopener">open it in a new tab</a> to download it.</p>
-        </div>
-    </div>
-}
+<PlayerDialog Src="@(playing == null ? null : $"media/{IndexOf(playing)}")" Title="@(playing?.FileName ?? "")" OnClose="() => playing = null" />
 
 <DeleteFileDialog Decision="deleting" OnCancel="() => deleting = null" OnDone="Deleted" />
 

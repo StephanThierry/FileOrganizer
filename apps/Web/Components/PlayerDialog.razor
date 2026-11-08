@@ -1,0 +1,18 @@
+@* Plays a video in a dialog. Browsers play mp4, webm and mov, not every format. *@
+@if (Src != null)
+{
+    <div class="dialog-backdrop" @onclick="OnClose">
+        <div class="dialog player" role="dialog" aria-modal="true" @onclick:stopPropagation="true">
+            <div class="player-head"><h2>@Title</h2><button @onclick="OnClose">Close</button></div>
+            <video src="@Src" controls autoplay preload="metadata" style="width:100%;max-height:70vh;background:#000"></video>
+            <p class="muted">Browsers play mp4, webm and mov, not every format. If nothing shows, <a href="@Src" target="_blank" rel="noopener">open it in a new tab</a> to download it.</p>
+        </div>
+    </div>
+}
+
+@code {
+    /// <summary>The address of the video, or null for no dialog.</summary>
+    [Parameter] public string? Src { get; set; }
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public EventCallback OnClose { get; set; }
+}

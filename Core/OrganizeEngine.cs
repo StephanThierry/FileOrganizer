@@ -31,6 +31,8 @@ public sealed record OrganizeProgress
     public IReadOnlyList<string> RecentLines { get; init; } = Array.Empty<string>();
     /// <summary>A picture of the last video that was read (a file in the thumbnail folder).</summary>
     public string? LastThumbnail { get; init; }
+    /// <summary>The video that picture is of (its full path), so it can be played.</summary>
+    public string? LastThumbnailVideo { get; init; }
 
     public TimeSpan Elapsed { get; init; }
     public TimeSpan? Remaining { get; init; }
@@ -132,7 +134,7 @@ public sealed class OrganizeEngine : IDisposable
         int matched = 0, unmatched = 0, corrupt = 0, cacheHits = 0, ocrDone = 0, done = 0;
         double ocrSeconds = 0;
         int videosSeen = 0;
-        string? lastThumb = null;
+        string? lastThumb = null, lastThumbVideo = null;
         var recent = new List<string>();
         int remainingUncachedVideos = files.Count(f => videoExtensions.Contains(Path.GetExtension(f)) && !cache.ContainsKey(f));
 
@@ -150,7 +152,7 @@ public sealed class OrganizeEngine : IDisposable
                 Phase = phase, Folder = folder, FilesTotal = files.Count, FilesDone = done,
                 Matched = matched, Unmatched = unmatched, Corrupt = corrupt, CacheHits = cacheHits, OcrDone = ocrDone,
                 CurrentFile = file, Stage = stage, OcrFrame = frame, OcrFrames = frames,
-                RecentLines = recent.ToList(), LastThumbnail = lastThumb,
+                RecentLines = recent.ToList(), LastThumbnail = lastThumb, LastThumbnailVideo = lastThumbVideo,
                 Elapsed = timer.Elapsed, Remaining = remaining,
             };
         }
@@ -219,7 +221,7 @@ public sealed class OrganizeEngine : IDisposable
                             ocrDone++;
                             remainingUncachedVideos--;
                             ocrSeconds += started.Elapsed.TotalSeconds;
-                            if (ThumbFolder != null) lastThumb = Thumbnails.Ensure(full, ThumbFolder) ?? lastThumb;
+                            if (ThumbFolder != null && Thumbnails.Ensure(full, ThumbFolder) is { } made) { lastThumb = made; lastThumbVideo = full; }
                         }
                         d.OcrLines = read.Lines.ToList();
                         d.OcrCorrupt = read.IsCorrupt;

@@ -9,6 +9,9 @@ namespace FileOrganizer.Desktop.ViewModels;
 /// <summary>A folder used before, as a button.</summary>
 public sealed record RecentFolder(string Path, IRelayCommand Command, IRelayCommand Remove);
 
+/// <summary>A picture of a video that was read during the scan; clicking it plays the video.</summary>
+public sealed record ScanThumb(Bitmap Image, string VideoPath, IRelayCommand Play);
+
 public partial class ScanViewModel : ViewModelBase
 {
     private readonly AppController app;
@@ -17,7 +20,7 @@ public partial class ScanViewModel : ViewModelBase
     private string? lastThumb;
 
     public ObservableCollection<RecentFolder> Recent { get; } = new();
-    public ObservableCollection<Bitmap> Thumbs { get; } = new();
+    public ObservableCollection<ScanThumb> Thumbs { get; } = new();
 
     /// <summary>Set by the view: lets the user pick a folder (null: cancelled).</summary>
     public Func<Task<string?>>? PickFolder { get; set; }
@@ -131,9 +134,10 @@ public partial class ScanViewModel : ViewModelBase
         {
             lastThumb = p.LastThumbnail;
             var bitmap = Bitmaps.Load(p.LastThumbnail);
-            if (bitmap != null)
+            string? video = p.LastThumbnailVideo;
+            if (bitmap != null && video != null)
             {
-                Thumbs.Insert(0, bitmap);
+                Thumbs.Insert(0, new ScanThumb(bitmap, video, new RelayCommand(() => Play(video))));
                 while (Thumbs.Count > 8) Thumbs.RemoveAt(Thumbs.Count - 1);
             }
         }

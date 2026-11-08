@@ -5,6 +5,12 @@
 .fo-row.is-done { opacity: .55; }
 .fo-thumb { width: 192px; height: 108px; background: var(--frame); border-radius: 3px; display: grid; place-items: center; color: var(--muted); overflow: hidden; }
 .fo-thumbs { display: flex; gap: 6px; }
+/* The pictures during a scan: the whole picture plays its video; a small play badge sits at the bottom right */
+.recent .thumbbtn { position: relative; flex: 0 0 auto; padding: 0; border: 0; border-radius: 0; background: none; cursor: pointer; line-height: 0; }
+.recent .thumbbtn img { width: 150px; height: 100px; display: block; }
+.recent .thumbbtn .playbadge { position: absolute; right: 6px; bottom: 6px; width: 24px; height: 24px; border-radius: 50%; background: rgba(0,0,0,.6); color: #fff; display: grid; place-items: center; padding-left: 2px; }
+.recent .thumbbtn:hover .playbadge, .recent .thumbbtn:focus-visible .playbadge { background: rgba(0,0,0,.9); }
+.recent .thumbbtn:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
 .fo-thumb img { width: 100%; height: 100%; object-fit: cover; }
 .fo-row .info { min-width: 0; }
 .fo-row .name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -56,3 +62,4 @@ button.icon.del:hover:not(:disabled) { color: var(--grease-hover); background: v
 }
 .tags .forget { color: var(--muted); margin-left: 6px; font-size: .8rem; }
 .tags .forget:hover { color: var(--grease); text-decoration: none; }
+.scan-grid aside p { overflow-wrap: anywhere; }

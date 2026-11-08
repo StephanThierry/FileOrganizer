@@ -105,6 +105,20 @@ var mediaTypes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase
     [".mkv"] = "video/x-matroska", [".ogv"] = "video/ogg", [".avi"] = "video/x-msvideo", [".wmv"] = "video/x-ms-wmv",
     [".flv"] = "video/x-flv", [".mpg"] = "video/mpeg", [".mpeg"] = "video/mpeg",
 };
+// A video of the folder being scanned, for the pictures of the scan page (the result does not exist until the scan ends):
+// /scanmedia?name=<path inside the scanned folder>. Nothing outside that folder is served.
+app.MapGet("/scanmedia", (string name) =>
+{
+    string? folder = controller.Engine.Current.Folder;
+    if (string.IsNullOrEmpty(folder) || string.IsNullOrWhiteSpace(name)) return Results.NotFound();
+    string root = Path.GetFullPath(folder).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
+    string path;
+    try { path = Path.GetFullPath(Path.Combine(root, name)); } catch (Exception) { return Results.NotFound(); }
+    if (!path.StartsWith(root, StringComparison.OrdinalIgnoreCase) || !File.Exists(path)) return Results.NotFound();
+    var type = mediaTypes.TryGetValue(Path.GetExtension(path), out var t) ? t : "application/octet-stream";
+    return Results.File(path, type, enableRangeProcessing: true);
+});
+
 app.MapGet("/media/{n:int}", (int n) =>
 {
     var d = controller.Result?.Decisions.ElementAtOrDefault(n);

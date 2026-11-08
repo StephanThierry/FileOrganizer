@@ -96,7 +96,13 @@
                     @if (thumbs.Count > 0)
                     {
                         <div class="recent" aria-label="Pictures of the latest videos read">
-                            @foreach (var t in thumbs) { <img src="@t" alt="" /> }
+                            @foreach (var t in thumbs)
+                            {
+                                <button type="button" class="thumbbtn" @onclick="() => playing = t" title="Play this video" aria-label="Play @t.Name">
+                                    <img src="@t.Src" alt="" />
+                                    <span class="playbadge" aria-hidden="true"><svg width="10" height="11" viewBox="0 0 10 11"><path d="M0 0v11l10-5.5z" fill="currentColor" /></svg></span>
+                                </button>
+                            }
                         </div>
                     }
 
@@ -139,6 +145,7 @@
     </div>
 </div>
 
+<PlayerDialog Src="@(playing == null ? null : "scanmedia?name=" + Uri.EscapeDataString(playing.Relative))" Title="@(playing?.Name ?? "")" OnClose="() => playing = null" />
 <FolderPicker @bind-Open="picking" Start="@folder" OnChosen="Use" />
 
 @code {
@@ -146,7 +153,9 @@
     private string folder = "";
     private string? error;
     private bool stopping, picking, scheduled;
-    private readonly List<string> thumbs = new();
+    private sealed record Thumb(string Src, string Relative, string Name);
+    private readonly List<Thumb> thumbs = new();
+    private Thumb? playing;
     private string? lastThumb;
 
     private bool running => App.Engine.IsRunning && p.Phase is OrganizePhase.Listing or OrganizePhase.Scanning;
@@ -167,7 +176,8 @@
         {
             lastThumb = t;
             // A scan's result is not published until it ends, so the picture is asked for by its (hash) file name
-            thumbs.Insert(0, "thumbfile/" + System.IO.Path.GetFileName(t));
+            if (progress.LastThumbnailVideo is { } video)
+                thumbs.Insert(0, new Thumb("thumbfile/" + System.IO.Path.GetFileName(t), System.IO.Path.GetRelativePath(progress.Folder, video), System.IO.Path.GetFileName(video)));
             while (thumbs.Count > 8) thumbs.RemoveAt(thumbs.Count - 1);
         }
         if (progress.Phase is OrganizePhase.Done or OrganizePhase.Cancelled or OrganizePhase.Failed) stopping = false;
