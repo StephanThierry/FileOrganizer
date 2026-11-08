@@ -208,6 +208,59 @@ public static class Thumbnails
 {
     public const int Width = 240;
 
+    /// <summary>How many pictures Review shows for a video.</summary>
+    public const int Parts = 3;
+
+    /// <summary>
+    /// One of <paramref name="parts"/> pictures spread over a video (part 0 of 3 is a sixth in, part 1 the middle, part 2 five sixths in:
+    /// away from the often black start and end). Made on first use; null when it can't be made.
+    /// </summary>
+    public static string? EnsurePart(string videoPath, string folder, int part, int parts = Parts)
+    {
+        try
+        {
+            if (parts < 1 || part < 0 || part >= parts) return null;
+            var info = new FileInfo(videoPath);
+            if (!info.Exists) return null;
+            string target = Path.Combine(folder, KeyOf(info) + $"_{part + 1}of{parts}.png");
+            if (File.Exists(target)) return target;
+
+            using var capture = new VideoCapture(videoPath, VideoCaptureAPIs.FFMPEG);
+            if (!capture.IsOpened()) return null;
+            double fps = capture.Fps, frames = capture.Get(VideoCaptureProperties.FrameCount);
+            double duration = fps > 0 ? frames / fps : 0;
+
+            using var frame = new Mat();
+            double at = duration > 0 ? duration * (part + 0.5) / parts : 0;
+            capture.Set(VideoCaptureProperties.PosMsec, at * 1000);
+            if (!capture.Read(frame) || frame.Empty())
+            {
+                capture.Set(VideoCaptureProperties.PosMsec, 0);
+                if (!capture.Read(frame) || frame.Empty()) return null;
+            }
+            return Save(frame, folder, target);
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
+    private static string KeyOf(FileInfo info) =>
+        Convert.ToHexString(SHA1.HashData(Encoding.UTF8.GetBytes($"{info.FullName}|{info.Length}|{info.LastWriteTimeUtc.Ticks}"))).ToLowerInvariant();
+
+    private static string Save(Mat frame, string folder, string target)
+    {
+        using var small = new Mat();
+        int height = Math.Max(1, (int)Math.Round(frame.Height * (double)Width / frame.Width));
+        Cv2.Resize(frame, small, new Size(Width, height));
+        Directory.CreateDirectory(folder);
+        // Encoded in memory and written with .NET: OpenCV's own writer can't take non-ASCII folder names on Windows
+        Cv2.ImEncode(".png", small, out byte[] png);
+        File.WriteAllBytes(target, png);
+        return target;
+    }
+
     /// <summary>The picture file for a video (made on first use), or null when it can't be made.</summary>
     public static string? Ensure(string videoPath, string folder)
     {
@@ -215,8 +268,7 @@ public static class Thumbnails
         {
             var info = new FileInfo(videoPath);
             if (!info.Exists) return null;
-            string key = Convert.ToHexString(SHA1.HashData(Encoding.UTF8.GetBytes($"{info.FullName}|{info.Length}|{info.LastWriteTimeUtc.Ticks}"))).ToLowerInvariant();
-            string target = Path.Combine(folder, key + ".png");
+            string target = Path.Combine(folder, KeyOf(info) + ".png");
             if (File.Exists(target)) return target;
 
             using var capture = new VideoCapture(videoPath, VideoCaptureAPIs.FFMPEG);
@@ -233,15 +285,7 @@ public static class Thumbnails
                 capture.Set(VideoCaptureProperties.PosMsec, 0);
                 if (!capture.Read(frame) || frame.Empty()) return null;
             }
-
-            using var small = new Mat();
-            int height = Math.Max(1, (int)Math.Round(frame.Height * (double)Width / frame.Width));
-            Cv2.Resize(frame, small, new Size(Width, height));
-            Directory.CreateDirectory(folder);
-            // Encoded in memory and written with .NET: OpenCV's own writer can't take non-ASCII folder names on Windows
-            Cv2.ImEncode(".png", small, out byte[] png);
-            File.WriteAllBytes(target, png);
-            return target;
+            return Save(frame, folder, target);
         }
         catch (Exception)
         {

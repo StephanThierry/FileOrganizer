@@ -219,6 +219,14 @@ public sealed class AppController : IDisposable
         return path == null ? null : Thumbnails.Ensure(path, ThumbFolder);
     }
 
+    /// <summary>One of the pictures of a video (0 to <see cref="Thumbnails.Parts"/> - 1), made on first use, or null.</summary>
+    public string? ThumbOf(FileDecision d, int part)
+    {
+        if (!d.IsVideo) return null;
+        string? path = PathOf(d);
+        return path == null ? null : Thumbnails.EnsurePart(path, ThumbFolder, part);
+    }
+
     /// <summary>The names of the categories, in priority order (and the folder for unreadable videos).</summary>
     public List<string> CategoryNames()
     {

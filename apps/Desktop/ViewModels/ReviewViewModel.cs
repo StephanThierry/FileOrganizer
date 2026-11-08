@@ -153,6 +153,7 @@ public partial class FileRow : ObservableObject
     private readonly Action<string?> play;
     private readonly Action changed;
     private readonly ThumbLoader thumb;
+    private readonly ThumbLoader[] parts = new ThumbLoader[Thumbnails.Parts];
     private bool settingChoice;
 
     public FileDecision Decision { get; }
@@ -182,6 +183,11 @@ public partial class FileRow : ObservableObject
 
     public Bitmap? Thumb => thumb.Bitmap;
 
+    // Review shows three pictures spread over the video (each is made when its row first shows)
+    public Bitmap? Thumb1 => parts[0].Bitmap;
+    public Bitmap? Thumb2 => parts[1].Bitmap;
+    public Bitmap? Thumb3 => parts[2].Bitmap;
+
     [ObservableProperty] private string choice = "";
     [ObservableProperty] private bool isDone;
     [ObservableProperty] private bool isLeft;
@@ -193,6 +199,9 @@ public partial class FileRow : ObservableObject
     {
         Decision = d; this.app = app; Choices = choices; this.play = play; this.changed = changed;
         thumb = new ThumbLoader(() => app.ThumbOf(d), () => OnPropertyChanged(nameof(Thumb)));
+        parts[0] = new ThumbLoader(() => app.ThumbOf(d, 0), () => OnPropertyChanged(nameof(Thumb1)));
+        parts[1] = new ThumbLoader(() => app.ThumbOf(d, 1), () => OnPropertyChanged(nameof(Thumb2)));
+        parts[2] = new ThumbLoader(() => app.ThumbOf(d, 2), () => OnPropertyChanged(nameof(Thumb3)));
         Refresh();
     }
 

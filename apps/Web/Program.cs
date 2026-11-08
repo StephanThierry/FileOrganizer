@@ -80,11 +80,12 @@ if (token != null)
 app.UseAntiforgery();
 app.MapStaticAssets();
 
-// A picture of a video of the current result: /thumb/12 (12 = its place in the result). Made on the first request.
-app.MapGet("/thumb/{n:int}", (int n) =>
+// A picture of a video of the current result: /thumb/12 (12 = its place in the result), or /thumb/12?part=0..2 for one of the three
+// spread over the video. Made on the first request.
+app.MapGet("/thumb/{n:int}", (int n, int? part) =>
 {
     var d = controller.Result?.Decisions.ElementAtOrDefault(n);
-    var path = d == null ? null : controller.ThumbOf(d);
+    var path = d == null ? null : part is { } p ? controller.ThumbOf(d, p) : controller.ThumbOf(d);
     return path != null && File.Exists(path) ? Results.File(path, "image/png", enableRangeProcessing: false) : Results.NotFound();
 });
 

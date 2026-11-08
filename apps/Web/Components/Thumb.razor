@@ -2,7 +2,7 @@
 <div class="fo-thumb">
     @if (Decision.IsVideo && Index >= 0)
     {
-        <img loading="lazy" src="thumb/@Index" alt="" onerror="this.style.visibility='hidden'" />
+        <img loading="lazy" src="@Src" alt="" onerror="this.style.visibility='hidden'" />
     }
     else
     {
@@ -14,4 +14,8 @@
     [Parameter, EditorRequired] public FileDecision Decision { get; set; } = default!;
     /// <summary>The file's place in the result (the address of its picture and of the player).</summary>
     [Parameter] public int Index { get; set; } = -1;
+    /// <summary>Which of the pictures spread over the video (0, 1, 2), or -1 for the single default picture.</summary>
+    [Parameter] public int Part { get; set; } = -1;
+
+    private string Src => Part < 0 ? $"thumb/{Index}" : $"thumb/{Index}?part={Part}";
 }

@@ -59,7 +59,13 @@
             @foreach (var d in visible.Take(shown))
             {
                 <div class="fo-row @(d.Done ? "is-done" : "")" @key="d">
-                    <Thumb Decision="d" Index="IndexOf(d)" />
+                    <div class="fo-thumbs">
+                        @if (d.IsVideo)
+                        {
+                            @for (int part = 0; part < 3; part++) { <Thumb Decision="d" Index="IndexOf(d)" Part="part" /> }
+                        }
+                        else { <Thumb Decision="d" Index="IndexOf(d)" /> }
+                    </div>
                     <button class="icon" @onclick="() => Play(d)" title="Open it" aria-label="Open @d.FileName">@PlayIcon</button>
                     <div class="info">
                         <div class="name">@d.FileName</div>
