@@ -141,7 +141,7 @@ public class SettingsTests : IDisposable
             Make.Cat("", false),
             Make.Cat("Rx", false, ("Regex", "(")));
         var problems = SettingsStore.Validate(s);
-        Assert.Contains(problems, p => p.Contains("two categories called \"good\""));
+        Assert.DoesNotContain(problems, p => p.Contains("good"));   // the same name twice is allowed
         Assert.Contains(problems, p => p.Contains("\"..\" can't be a folder name"));
         Assert.Contains(problems, p => p.Contains("\"a/b\" can't be a folder name"));
         Assert.Contains(problems, p => p.Contains("has no name"));
@@ -575,6 +575,15 @@ public class AppControllerTests : IDisposable
         Assert.Equal(26, times.Count);
         Assert.Equal(new[] { 0.0 }, OpenCvVideoOcr.SampleTimes(0.4));   // a very short video: just the first frame
         Assert.Equal(new[] { 0.0, 1.0, 2.0 }, OpenCvVideoOcr.SampleTimes(2.5));
+    }
+
+    [Fact]
+    public void AddingARuleWorksWhenSettingsRepeatACategoryName()
+    {
+        using var app = Open(Make.Rules(Make.Cat("Other Cat", true, ("Contains", "x")), Make.Cat("Other Cat", true, ("Contains", "y"))));
+        string message = app.AddRule("MyCat", "Contains", "abc", out bool ok);
+        Assert.True(ok, message);
+        Assert.Contains(app.Settings.Categories, c => c.Name == "MyCat");
     }
 
     [Fact]

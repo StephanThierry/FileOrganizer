@@ -95,12 +95,11 @@ public static class SettingsStore
     public static List<string> Validate(Settings settings)
     {
         var problems = new List<string>();
-        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var c in settings.Categories)
         {
             if (string.IsNullOrWhiteSpace(c.Name)) { problems.Add("A category has no name."); continue; }
             if (!FolderNames.IsSafe(c.Name)) problems.Add($"\"{c.Name}\" can't be a folder name (no \\ / : * ? \" < > | and not . or ..).");
-            if (!seen.Add(c.Name)) problems.Add($"There are two categories called \"{c.Name}\".");
+            // The same name twice is allowed (as it always was): the first match wins and both go to the same folder
             foreach (var r in c.Rules)
             {
                 var error = RuleMatcher.Validate(r);
