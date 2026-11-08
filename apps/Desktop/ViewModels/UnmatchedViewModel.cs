@@ -68,7 +68,7 @@ public partial class UnmatchedViewModel : ViewModelBase
         var keep = new HashSet<FileDecision>(wanted);
         foreach (var gone in rows.Keys.Where(k => !keep.Contains(k)).ToList()) rows.Remove(gone);
         foreach (var d in wanted)
-            if (!rows.ContainsKey(d)) rows[d] = new UnmatchedRow(d, app, Choices, p => Play(p), OnAssigned, OpenRule);
+            if (!rows.ContainsKey(d)) rows[d] = new UnmatchedRow(d, app, Choices, p => Play(p), OnAssigned, OpenRule) { DeleteRequested = row => AskDeleteFile(app, row.Decision) };
 
         Rows.Clear();
         foreach (var r in wanted.Select(d => rows[d])) Rows.Add(r);

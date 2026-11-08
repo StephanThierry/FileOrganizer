@@ -10,6 +10,11 @@
 .fo-row .name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fo-row .why { font-size: .85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fo-row .rename { font-size: .8rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fo-actions { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+button.icon.del { color: var(--grease); }
+button.icon.del:hover:not(:disabled) { color: var(--grease-hover); background: var(--grease-wash); border-color: var(--grease); }
+.un-side { display: flex; gap: 8px; align-items: center; }
+.un-side select { flex: 1; min-width: 0; }
 .fo-row .goes { display: flex; gap: 8px; align-items: center; }
 .fo-row .goes select { width: 100%; }
 .chip { display: inline-block; padding: 1px 8px; border-radius: 10px; background: var(--table); border: 1px solid var(--rule); font-size: .78rem; }
@@ -45,7 +50,7 @@
   .fo-thumbs { flex-wrap: wrap; }
   .fo-thumbs .fo-thumb { width: 30%; height: auto; aspect-ratio: 16 / 9; }
   .fo-row .goes, .fo-row.head { grid-column: 1 / -1; }
-  .fo-row > button.icon { display: none; }
+  .fo-row > .fo-actions { flex-direction: row; }
   .un-row { grid-template-columns: 1fr; }
   .cat-layout { grid-template-columns: 1fr; }
 }

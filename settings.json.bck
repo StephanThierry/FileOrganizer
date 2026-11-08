@@ -1,0 +1,2358 @@
+{
+  "Categories": [
+    {
+      "Name": "LegalPorno.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "AH\\d{3,4}"
+        },
+        {
+          "Type": "Regex",
+          "Value": "AT\\d{3,4}"
+        },
+        {
+          "Type": "Regex",
+          "Value": "XF\\d{3,4}"
+        },
+        {
+          "Type": "Regex",
+          "Value": "IV\\d{3,4}"
+        },
+        {
+          "Type": "Regex",
+          "Value": "FLX\\d{3,4}"
+        },
+        {
+          "Type": "Regex",
+          "Value": "EKS\\d{3,4}"
+        },
+        {
+          "Type": "Regex",
+          "Value": "NFS\\d{3,4}"
+        },
+        {
+          "Type": "Regex",
+          "Value": "MH\\d{3,4}"
+        },
+        {
+          "Type": "Regex",
+          "Value": "GIO\\d{3,4}"
+        },
+        {
+          "Type": "Regex",
+          "Value": "OTS\\d{3,4}"
+        },
+        {
+          "Type": "Regex",
+          "Value": "GP\\d{3,4}"
+        },
+        {
+          "Type": "Regex",
+          "Value": "LTP\\d{3,4}"
+        },
+        {
+          "Type": "Regex",
+          "Value": "OB\\d{3,4}"
+        },
+        {
+          "Type": "Regex",
+          "Value": "SZ\\d{3,4}"
+        },
+        {
+          "Type": "Regex",
+          "Value": "NF\\d{3,4}"
+        },
+        {
+          "Type": "Regex",
+          "Value": "YE\\d{3,4}"
+        },
+        {
+          "Type": "Regex",
+          "Value": "YE\\d{2}-"
+        },
+        {
+          "Type": "Contains",
+          "Value": "100% hell"
+        },
+        {
+          "Type": "Contains",
+          "Value": "FirstAnalTeens"
+        },
+        {
+          "Type": "Contains",
+          "Value": "Giorgio"
+        },
+        {
+          "Type": "Regex",
+          "Value": "PISS.SPEW"
+        },
+        {
+          "Type": "Contains",
+          "Value": "Toby Dick"
+        },
+        {
+          "Type": "Regex",
+          "Value": "real.life.porno"
+        },
+        {
+          "Type": "Regex",
+          "Value": "Real.Life.RLP"
+        },
+        {
+          "Type": "Regex",
+          "Value": "LEGA.?.?ORNO.C.."
+        },
+        {
+          "Type": "Regex",
+          "Value": "LEGALPO.?.?NO"
+        },
+        {
+          "Type": "Regex",
+          "Value": "ANGELO.?GO.SHAC"
+        },
+        {
+          "Type": "Contains",
+          "Value": "Yummy Estudio"
+        },
+        {
+          "Type": "Regex",
+          "Value": ".?NBOX.COM"
+        },
+        {
+          "Type": "Contains",
+          "Value": "P-Sluts"
+        },
+        {
+          "Type": "Contains",
+          "Value": "nrx"
+        },
+        {
+          "Type": "Contains",
+          "Value": "ISSVIDS"
+        },
+        {
+          "Type": "Regex",
+          "Value": "P.SSV.DS"
+        },
+        {
+          "Type": "Regex",
+          "Value": "ANGELO*G*SHACK*"
+        },
+        {
+          "Type": "Regex",
+          "Value": "ODSHACK.?ORIGINAL"
+        },
+        {
+          "Type": "Regex",
+          "Value": "ANGELO.?G.?DSHACK"
+        },
+        {
+          "Type": "Regex",
+          "Value": "SHACK*ANGELO"
+        },
+        {
+          "Type": "Regex",
+          "Value": "ANALV.DS..OM"
+        },
+        {
+          "Type": "Regex",
+          "Value": "ANALV.DS..OM"
+        },
+        {
+          "Type": "Regex",
+          "Value": "PISS.?VIDS"
+        },
+        {
+          "Type": "Contains",
+          "Value": "NALVIDS"
+        },
+        {
+          "Type": "Contains",
+          "Value": "GONZO."
+        },
+        {
+          "Type": "Contains",
+          "Value": "Anal TERROR"
+        },
+        {
+          "Type": "Contains",
+          "Value": "PORNBOX"
+        },
+        {
+          "Type": "Contains",
+          "Value": "CASANOVA STUDIO"
+        },
+        {
+          "Type": "Contains",
+          "Value": "Ob Slave"
+        },
+        {
+          "Type": "Regex",
+          "Value": "Migi.?Aoki"
+        }
+      ]
+    },
+    {
+      "Name": "Onlyfans.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "clip.?.sale..om"
+        },
+        {
+          "Type": "Regex",
+          "Value": "Only.Fans"
+        },
+        {
+          "Type": "Contains",
+          "Value": "fansly"
+        },
+        {
+          "Type": "Regex",
+          "Value": "Porn.?Force"
+        },
+        {
+          "Type": "Contains",
+          "Value": "aussiefitcouple"
+        },
+        {
+          "Type": "Contains",
+          "Value": "ManyVids"
+        },
+        {
+          "Type": "Contains",
+          "Value": "XHAMSTER"
+        },
+        {
+          "Type": "Contains",
+          "Value": "Homeporn"
+        },
+        {
+          "Type": "Contains",
+          "Value": "TikTok"
+        },
+        {
+          "Type": "Contains",
+          "Value": "HomeClips"
+        },
+        {
+          "Type": "Contains",
+          "Value": "Snapchat"
+        }
+      ]
+    },
+    {
+      "Name": "TabooHeat.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Contains",
+          "Value": "Cory Chase"
+        },
+        {
+          "Type": "Contains",
+          "Value": "Taboo Heat"
+        }
+      ]
+    },
+    {
+      "Name": "Pornworld.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "Hightide-video.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Contains",
+          "Value": "HIGHTIDE"
+        }
+      ]
+    },
+    {
+      "Name": "Bonnie Blue",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Contains",
+          "Value": "bonnieblu"
+        }
+      ]
+    },
+    {
+      "Name": "ThaiGirlsWild.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "Thai.?Girls.?Wild"
+        }
+      ]
+    },
+    {
+      "Name": "Blowketing.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Contains",
+          "Value": "KETING."
+        }
+      ]
+    },
+    {
+      "Name": "CumPerfection.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "EvolvedFights.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "NaughtyAmerica.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "TamedTeens.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "MOFOS.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": ".OFOS"
+        }
+      ]
+    },
+    {
+      "Name": "Puretaboo.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "PublicDisgrace.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Contains",
+          "Value": "ublicDisgra"
+        }
+      ]
+    },
+    {
+      "Name": "DisciplesOfDesire.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "DISCIPLES.?OF.?DESIRE"
+        },
+        {
+          "Type": "Regex",
+          "Value": "^DISCIPLES"
+        }
+      ]
+    },
+    {
+      "Name": "CMPhotographer.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "CM.Photographer"
+        }
+      ]
+    },
+    {
+      "Name": "RedLightDistrict.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "VINCEVOUYE"
+        },
+        {
+          "Type": "Contains",
+          "Value": "ClubRedLight"
+        },
+        {
+          "Type": "Contains",
+          "Value": "Jake Malone"
+        },
+        {
+          "Type": "Regex",
+          "Value": "Red.?Light.?District"
+        },
+        {
+          "Type": "Contains",
+          "Value": "IN MEMORY OF 9/11"
+        }
+      ]
+    },
+    {
+      "Name": "LethalHardcore.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "TexasBukkake.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "ArgentinaCasting.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "GangbangCreampie.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "gangbang.?creampie.com"
+        }
+      ]
+    },
+    {
+      "Name": "SwallowSalon.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "urabukkake.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "Tadpolexstudio.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "BlacksonBlondes.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "BlacksOnB.ondes"
+        }
+      ]
+    },
+    {
+      "Name": "DTFsluts.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "DTF.sluts"
+        }
+      ]
+    },
+    {
+      "Name": "MagmaFilm",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "MAGMA.?F.LM"
+        }
+      ]
+    },
+    {
+      "Name": "MyDirtyHobby.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "mydir.?.hobb"
+        },
+        {
+          "Type": "Regex",
+          "Value": "my.ir.?.hobby"
+        }
+      ]
+    },
+    {
+      "Name": "PeterNorth.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "PETERN.RTH"
+        }
+      ]
+    },
+    {
+      "Name": "HerLimit.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Contains",
+          "Value": "LETSDOEIT"
+        },
+        {
+          "Type": "Regex",
+          "Value": "HER.?LIMIT"
+        }
+      ]
+    },
+    {
+      "Name": "Asstraffic.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Contains",
+          "Value": "Ass traffic"
+        }
+      ]
+    },
+    {
+      "Name": "FreakMobMedia.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "SpermSwallowers.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "AssholeFever.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "ATKingdom.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "SexAndSubmission.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "MrLuckyPOV.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "MR.?LUCKYPOW"
+        }
+      ]
+    },
+    {
+      "Name": "Tushy.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "TUSHY.RAW"
+        }
+      ]
+    },
+    {
+      "Name": "Assylum.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "Defyxxx.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "FamilyTherapy.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "Family.Therapy"
+        }
+      ]
+    },
+    {
+      "Name": "FrameLeaks.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "From Teen Ass To Teen Mouth",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "From.Teen.Ass.To.Teen.Mouth"
+        }
+      ]
+    },
+    {
+      "Name": "Digitalsin.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "AfricanCasting.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "PrivatAmateure.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "inflagranti.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "Oldje.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "FirstAnalQuest.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "FIRSTANAL.QUEST"
+        }
+      ]
+    },
+    {
+      "Name": "TeenMegaWorld.net",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "T..?nMegaWorld.n.t"
+        },
+        {
+          "Type": "Regex",
+          "Value": "TeenMegaW..ld"
+        }
+      ]
+    },
+    {
+      "Name": "PascalSubSluts.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "PASCALS"
+        }
+      ]
+    },
+    {
+      "Name": "AnalLickFest.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "AnalL.kFest"
+        }
+      ]
+    },
+    {
+      "Name": "AnalJesse.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "RodneyMoore.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "Rodney.?blast"
+        }
+      ]
+    },
+    {
+      "Name": "VIPissy.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "Rodney.?blast"
+        }
+      ]
+    },
+    {
+      "Name": "Analized.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "Hobybuchanon.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "H.byBuchan"
+        }
+      ]
+    },
+    {
+      "Name": "Nubilefilms.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Contains",
+          "Value": "nubilescasting"
+        }
+      ]
+    },
+    {
+      "Name": "NoBoring.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "SplatBukkake.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "CumBizz.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "PublicAgent.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "BigGulpGirls.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "Nympho.com",
+      "IgnoreCategoryInContent": true,
+      "Rules": [
+        {
+          "Type": "Contains",
+          "Value": "Nympho.com"
+        }
+      ]
+    },
+    {
+      "Name": "WifeysWorld.com",
+      "IgnoreCategoryInContent": true,
+      "Rules": [
+        {
+          "Type": "Contains",
+          "Value": "WIEYSWORLD"
+        }
+      ]
+    },
+    {
+      "Name": "ChickTrainer.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Contains",
+          "Value": "CumTrainer"
+        }
+      ]
+    },
+    {
+      "Name": "DareDorm.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "SpermMania.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "Sperm.?Mania"
+        },
+        {
+          "Type": "Contains",
+          "Value": "auqti"
+        }
+      ]
+    },
+    {
+      "Name": "Throated.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "Groupbanged.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "HardX.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "MaxHardcore.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "Max.Hardcore"
+        }
+      ]
+    },
+    {
+      "Name": "DDFNetwork.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "DDF.Network"
+        }
+      ]
+    },
+    {
+      "Name": "Gloryhole.com",
+      "IgnoreCategoryInContent": true,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "Gloryh....com"
+        }
+      ]
+    },
+    {
+      "Name": "MrXes.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "Mr.Xes"
+        },
+        {
+          "Type": "Regex",
+          "Value": "Mr..Xes"
+        }
+      ]
+    },
+    {
+      "Name": "JackandJill.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "Jack.?Jill"
+        }
+      ]
+    },
+    {
+      "Name": "DancingBear.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "ElegantAngel.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "Elegant.?Angel"
+        }
+      ]
+    },
+    {
+      "Name": "FuckDolls.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Contains",
+          "Value": "Paul Stalker"
+        },
+        {
+          "Type": "Contains",
+          "Value": "Stalker Prod"
+        },
+        {
+          "Type": "Regex",
+          "Value": "paul.?st.lker"
+        }
+      ]
+    },
+    {
+      "Name": "Milfy.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "KAYDEN.?KROSS"
+        }
+      ]
+    },
+    {
+      "Name": "NadeNasty.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Contains",
+          "Value": "Nasty Nat"
+        },
+        {
+          "Type": "Contains",
+          "Value": "Nade Nasty"
+        },
+        {
+          "Type": "Contains",
+          "Value": "Nad Nasty"
+        }
+      ]
+    },
+    {
+      "Name": "RoccoSiffredi.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Contains",
+          "Value": "Rocco"
+        }
+      ]
+    },
+    {
+      "Name": "SeeHimFuck.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "SEE.?H.?MFUCK"
+        }
+      ]
+    },
+    {
+      "Name": "JulesJordan.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "Jules.?Jordan"
+        }
+      ]
+    },
+    {
+      "Name": "FakeHub.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "Premiumbukkake.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "^PB_"
+        },
+        {
+          "Type": "Regex",
+          "Value": "PREMIUM.*KAKE.COM"
+        },
+        {
+          "Type": "Regex",
+          "Value": "SWALLOWED: \\d"
+        },
+        {
+          "Type": "Regex",
+          "Value": "SWALLOWED:.*LOADS"
+        },
+        {
+          "Type": "Regex",
+          "Value": "PB.?Productions"
+        }
+      ]
+    },
+    {
+      "Name": "Bang.com",
+      "IgnoreCategoryInContent": true,
+      "Rules": [
+        {
+          "Type": "Contains",
+          "Value": "bang!"
+        },
+        {
+          "Type": "Contains",
+          "Value": "bang.com"
+        },
+        {
+          "Type": "Regex",
+          "Value": "^bang "
+        },
+        {
+          "Type": "Regex",
+          "Value": "^bang.c"
+        }
+      ]
+    },
+    {
+      "Name": "CzechAmateurs.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "czech.?amateurs"
+        },
+        {
+          "Type": "Regex",
+          "Value": "czech.?casting"
+        },
+        {
+          "Type": "Contains",
+          "Value": "CZECHFANTASY"
+        },
+        {
+          "Type": "Contains",
+          "Value": "CZECHHOMEORGY"
+        },
+        {
+          "Type": "Contains",
+          "Value": "CZECHAV.COM"
+        },
+        {
+          "Type": "Contains",
+          "Value": "CzechHypno"
+        },
+        {
+          "Type": "Contains",
+          "Value": "Czechsexcasting"
+        },
+        {
+          "Type": "Contains",
+          "Value": "czechstreets"
+        },
+        {
+          "Type": "Regex",
+          "Value": "CZECH.?MEGA.?SWINGERS"
+        }
+      ]
+    },
+    {
+      "Name": "BangBros.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "BAN.SHOT"
+        },
+        {
+          "Type": "Regex",
+          "Value": "BAN..?ROS!"
+        }
+      ]
+    },
+    {
+      "Name": "PublicInvasion.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "PeeAndBlow.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "PutaLocura.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Contains",
+          "Value": "PUTALOC"
+        },
+        {
+          "Type": "Regex",
+          "Value": "OCURA"
+        },
+        {
+          "Type": "Regex",
+          "Value": "^BUK_"
+        },
+        {
+          "Type": "Regex",
+          "Value": "^GAN_"
+        },
+        {
+          "Type": "Regex",
+          "Value": "^QUE_"
+        },
+        {
+          "Type": "Contains",
+          "Value": "TORBE"
+        },
+        {
+          "Type": "Regex",
+          "Value": "^TRI_"
+        },
+        {
+          "Type": "Regex",
+          "Value": "^ELC_"
+        },
+        {
+          "Type": "Regex",
+          "Value": "^GAF_"
+        },
+        {
+          "Type": "Regex",
+          "Value": "^MAM_"
+        },
+        {
+          "Type": "Regex",
+          "Value": "^MIC_"
+        },
+        {
+          "Type": "Regex",
+          "Value": "^PILL_"
+        },
+        {
+          "Type": "Regex",
+          "Value": "^ORO_"
+        },
+        {
+          "Type": "Regex",
+          "Value": "^TRI_"
+        },
+        {
+          "Type": "Regex",
+          "Value": "^PAD_"
+        },
+        {
+          "Type": "Regex",
+          "Value": "^SGH_"
+        }
+      ]
+    },
+    {
+      "Name": "FreakMedia.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "FREAK.?MED"
+        }
+      ]
+    },
+    {
+      "Name": "WowPorn.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "nude-in-public.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "PublicPickUps.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "NutInHerMouth.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "Nut.nHerMouth"
+        }
+      ]
+    },
+    {
+      "Name": "Kink.com",
+      "IgnoreCategoryInContent": true,
+      "Rules": [
+        {
+          "Type": "Contains",
+          "Value": "kink.com"
+        },
+        {
+          "Type": "Contains",
+          "Value": "kinkraw"
+        },
+        {
+          "Type": "Regex",
+          "Value": "^kink"
+        }
+      ]
+    },
+    {
+      "Name": "DeepthroatSirens.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "PornPros.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "Porn.ros.com"
+        }
+      ]
+    },
+    {
+      "Name": "Humiliated.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "SpoiledVirgins.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "BrandNewAmateurs.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "^bna"
+        },
+        {
+          "Type": "Contains",
+          "Value": "Newest Girls-Next-Door"
+        }
+      ]
+    },
+    {
+      "Name": "DickDrainers.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "BrokenLatinaWhores.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "LatinaAbuse.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "AnalOnly.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "Brazzers.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "DirtyAuditions.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "DIRTYAUD.T.ONS.co."
+        }
+      ]
+    },
+    {
+      "Name": "BackroomCastingCouch.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Contains",
+          "Value": "BackroomCastingCoutch"
+        }
+      ]
+    },
+    {
+      "Name": "FakeTaxi.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "NetvideoGirls.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "10ManCumSlam.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Contains",
+          "Value": "ManCumSlam"
+        }
+      ]
+    },
+    {
+      "Name": "Castingcouch-X.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "c.stin.couch.?HD"
+        },
+        {
+          "Type": "Contains",
+          "Value": "Couch-X"
+        }
+      ]
+    },
+    {
+      "Name": "FuckedFaces.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": ".uckedFaces"
+        }
+      ]
+    },
+    {
+      "Name": "18OnlyGirls.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "18[ \\.]\u002BONLY[ \\.]\u002BGIRLS"
+        }
+      ]
+    },
+    {
+      "Name": "ALSScan.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "GirlsDoPorn.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "BumsBus.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "BUMS.?BUS"
+        }
+      ]
+    },
+    {
+      "Name": "PissPlay.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "AllAnal.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "CumLouder.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "Fit18.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "faphouse.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "IrisxJase.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "ItsAnal.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "TrueAnal.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "ChrisMarxxx.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "Chris Mar."
+        }
+      ]
+    },
+    {
+      "Name": "DigitalPlayground.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "^Digital.?Playground"
+        }
+      ]
+    },
+    {
+      "Name": "AmateurAllure.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "Cum.Swallowing.Auditions"
+        },
+        {
+          "Type": "Regex",
+          "Value": "AMATEUR.?ALLURE"
+        }
+      ]
+    },
+    {
+      "Name": "Deeper.com",
+      "IgnoreCategoryInContent": true,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "Deeper.c.."
+        }
+      ]
+    },
+    {
+      "Name": "Backroom Casting Couch.com",
+      "IgnoreCategoryInContent": true,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "Backroom.?Casting.?Couch"
+        }
+      ]
+    },
+    {
+      "Name": "DamnTight.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "AsiaXXXTour.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "CludSweetheart.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "Shoplyfter.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "Private.com",
+      "IgnoreCategoryInContent": true,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "^private"
+        }
+      ]
+    },
+    {
+      "Name": "Spermsuckers.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "sperm.u.kers"
+        }
+      ]
+    },
+    {
+      "Name": "American Dad",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "American.?Dad"
+        }
+      ]
+    },
+    {
+      "Name": "Family Guy",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "Family.?Guy"
+        }
+      ]
+    },
+    {
+      "Name": "Last Week Tonight With John Oliver",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "Last.?Week.?Tonight"
+        }
+      ]
+    },
+    {
+      "Name": "Outlander",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "Saturday Night Live",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "Saturday.?Night.?Live"
+        }
+      ]
+    },
+    {
+      "Name": "AssTrafic.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "Abuseme.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "Tiny4k.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "TeamSkeet.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "^exxxtra.?small"
+        },
+        {
+          "Type": "Regex",
+          "Value": "FreeUseMilf"
+        },
+        {
+          "Type": "Regex",
+          "Value": "TY.?KINGS"
+        },
+        {
+          "Type": "Regex",
+          "Value": "^STEPSIBLINGS"
+        },
+        {
+          "Type": "Regex",
+          "Value": "TE..MS....?com"
+        },
+        {
+          "Type": "Contains",
+          "Value": "teensloveanal"
+        },
+        {
+          "Type": "Contains",
+          "Value": "SKEET.com"
+        },
+        {
+          "Type": "Contains",
+          "Value": "BFFS.COM"
+        },
+        {
+          "Type": "Contains",
+          "Value": "FREEUSE MILF"
+        },
+        {
+          "Type": "Regex",
+          "Value": "^FREEUSE$"
+        },
+        {
+          "Type": "Regex",
+          "Value": "^MYLF"
+        },
+        {
+          "Type": "Contains",
+          "Value": "FAMILY.COM"
+        },
+        {
+          "Type": "Contains",
+          "Value": "ThisGirlSucks"
+        }
+      ]
+    },
+    {
+      "Name": "PervCity.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Contains",
+          "Value": "UpHerAsshole"
+        },
+        {
+          "Type": "Contains",
+          "Value": ".COM .COM"
+        },
+        {
+          "Type": "Contains",
+          "Value": "AnalOverdose"
+        }
+      ]
+    },
+    {
+      "Name": "Japan",
+      "IgnoreCategoryInContent": true,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "^Japan"
+        },
+        {
+          "Type": "Regex",
+          "Value": "^.?ASW-"
+        },
+        {
+          "Type": "Regex",
+          "Value": "^DMC-"
+        },
+        {
+          "Type": "Regex",
+          "Value": "^MUDR-"
+        },
+        {
+          "Type": "Regex",
+          "Value": "^MVSD-"
+        },
+        {
+          "Type": "Regex",
+          "Value": "^NITR-"
+        },
+        {
+          "Type": "Regex",
+          "Value": "^GVH-"
+        },
+        {
+          "Type": "Regex",
+          "Value": "^TT-"
+        },
+        {
+          "Type": "Regex",
+          "Value": "RCT-\\d{3,4}"
+        },
+        {
+          "Type": "Regex",
+          "Value": "^NEOB-"
+        },
+        {
+          "Type": "Regex",
+          "Value": "^MIGD"
+        },
+        {
+          "Type": "Regex",
+          "Value": "Milky.?Cat"
+        },
+        {
+          "Type": "Regex",
+          "Value": "TAIWAN.?HOT"
+        },
+        {
+          "Type": "Contains",
+          "Value": "NEOB-"
+        },
+        {
+          "Type": "Contains",
+          "Value": "IPPA"
+        },
+        {
+          "Type": "Contains",
+          "Value": "maxJAV"
+        }
+      ]
+    },
+    {
+      "Name": "2Drops.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "2.drops"
+        },
+        {
+          "Type": "Contains",
+          "Value": "a DROPS"
+        },
+        {
+          "Type": "Regex",
+          "Value": "^drops$"
+        }
+      ]
+    },
+    {
+      "Name": "Wifey.com",
+      "IgnoreCategoryInContent": true,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "^wifey"
+        }
+      ]
+    },
+    {
+      "Name": "AsianStreetMeat.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "PropertySex.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "PROPERTYS.X.COM"
+        }
+      ]
+    },
+    {
+      "Name": "YesGirlz.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "PortaGloryhole.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "PortaG.ory...e..om"
+        },
+        {
+          "Type": "Regex",
+          "Value": "Porta...ryH..e..om"
+        }
+      ]
+    },
+    {
+      "Name": "WoodmanCastingX.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Contains",
+          "Value": "Casting X"
+        },
+        {
+          "Type": "Contains",
+          "Value": "WOODMAN"
+        },
+        {
+          "Type": "Regex",
+          "Value": "W.*MAN.?CASTING"
+        }
+      ]
+    },
+    {
+      "Name": "Anal4Her.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "mygf.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "MrPOV.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "MrP.V.com"
+        }
+      ]
+    },
+    {
+      "Name": "POV.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "POV.COM"
+        }
+      ]
+    },
+    {
+      "Name": "WakeUpNFuck.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Contains",
+          "Value": "WUNF"
+        },
+        {
+          "Type": "Regex",
+          "Value": "WAKE.?UP.?NFUC"
+        }
+      ]
+    },
+    {
+      "Name": "FreeuseFantasy.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "Freeuse.Fantasy"
+        }
+      ]
+    },
+    {
+      "Name": "LoadMyMouth.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "GGG",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "JOHN.?THOMPSON"
+        },
+        {
+          "Type": "Regex",
+          "Value": "Das.?erste.?Mal"
+        }
+      ]
+    },
+    {
+      "Name": "DrFellatio.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "Dr.?.?Fellatio"
+        }
+      ]
+    },
+    {
+      "Name": "Killergram.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "TeenFidelity.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "TEENFIDEL..Y.?.com"
+        }
+      ]
+    },
+    {
+      "Name": "HardcoreGangbang.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "Holed.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "FacialAbuse.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Contains",
+          "Value": "Unknown - "
+        },
+        {
+          "Type": "Contains",
+          "Value": "facefucking.com"
+        },
+        {
+          "Type": "Regex",
+          "Value": "Faci..Abuse"
+        },
+        {
+          "Type": "Contains",
+          "Value": "ialAbuse.com"
+        },
+        {
+          "Type": "Contains",
+          "Value": "Ghettogaggers"
+        }
+      ]
+    },
+    {
+      "Name": "21sextury.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Contains",
+          "Value": "SEXTURY"
+        }
+      ]
+    },
+    {
+      "Name": "DarkX.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "EvilAngel.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Contains",
+          "Value": "Evil Angel"
+        },
+        {
+          "Type": "Regex",
+          "Value": "E... ANGEL"
+        },
+        {
+          "Type": "Regex",
+          "Value": "EVIL.?A..EL"
+        },
+        {
+          "Type": "Regex",
+          "Value": "E..L.?A..?GEL"
+        },
+        {
+          "Type": "Regex",
+          "Value": "E.ilAN.EL."
+        }
+      ]
+    },
+    {
+      "Name": "CreateX.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Contains",
+          "Value": "_CREATE_"
+        },
+        {
+          "Type": "Regex",
+          "Value": "^create$"
+        }
+      ]
+    },
+    {
+      "Name": "CumDrinkingWife.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "Slutwife.? Marion"
+        },
+        {
+          "Type": "Regex",
+          "Value": "^CumDrinking$"
+        },
+        {
+          "Type": "Regex",
+          "Value": "CUM....?KINGWIFE.COM"
+        },
+        {
+          "Type": "Regex",
+          "Value": "GANGBANG.W.F.?.CO."
+        }
+      ]
+    },
+    {
+      "Name": "HitzeFrei.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "Exploitedteens.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "exploitedt.ens"
+        },
+        {
+          "Type": "Contains",
+          "Value": " ECG "
+        }
+      ]
+    },
+    {
+      "Name": "SpermaStudio.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Contains",
+          "Value": "Sperma-Studio"
+        },
+        {
+          "Type": "Regex",
+          "Value": "SPER.A.TUDIO"
+        }
+      ]
+    },
+    {
+      "Name": "Nubiles-Porn.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "Spizoo.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "SPER.A.TUDIO"
+        }
+      ]
+    },
+    {
+      "Name": "GirlsRimming.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": ".IRLSRIMMIN."
+        },
+        {
+          "Type": "Regex",
+          "Value": "RIMMING.?.?COM"
+        }
+      ]
+    },
+    {
+      "Name": "AmericanPornstar.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "AMER.CAN.?PORNSTAR"
+        },
+        {
+          "Type": "Contains",
+          "Value": "* PORNSTAR"
+        }
+      ]
+    },
+    {
+      "Name": "GirlsGoneWild.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "Girls.?Gone.?Wild"
+        }
+      ]
+    },
+    {
+      "Name": "GloryHoleSecrets.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "Glory.?Hole.?Secret"
+        },
+        {
+          "Type": "Contains",
+          "Value": "ryholeSecrets"
+        }
+      ]
+    },
+    {
+      "Name": "JaxSlayher.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Contains",
+          "Value": "Slayher.com"
+        },
+        {
+          "Type": "Contains",
+          "Value": "Slayher.tv"
+        },
+        {
+          "Type": "Regex",
+          "Value": "AX.?SLAYHER"
+        }
+      ]
+    },
+    {
+      "Name": "GloryholeSwallow.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "Glory.?hole.?Swallow"
+        }
+      ]
+    },
+    {
+      "Name": "HookupHotshot.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Contains",
+          "Value": "Hookup Hotshot"
+        },
+        {
+          "Type": "Contains",
+          "Value": "HOOKUP.COM"
+        },
+        {
+          "Type": "Regex",
+          "Value": "^HOTSHOT"
+        }
+      ]
+    },
+    {
+      "Name": "RealGirlsGoneBad.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "REALGIRLS.?G.NE.?BAD"
+        }
+      ]
+    },
+    {
+      "Name": "Blackpayback.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Contains",
+          "Value": "Payback.com"
+        },
+        {
+          "Type": "Contains",
+          "Value": "BlackPay"
+        }
+      ]
+    },
+    {
+      "Name": "BrandiBelle.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Contains",
+          "Value": "Brandi Belle"
+        }
+      ]
+    },
+    {
+      "Name": "MMVFilms.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "MMV.?DVD"
+        }
+      ]
+    },
+    {
+      "Name": "PornDudeCasting.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "PORNDUDE.?CASTING"
+        }
+      ]
+    },
+    {
+      "Name": "CumBuffet.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "iSuckXXX.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "ManuelFerrara.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "Pornfideleity.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "BigMouthfuls.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "Big.?Mouthfuls"
+        }
+      ]
+    },
+    {
+      "Name": "Exploitedcollegegirls.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Contains",
+          "Value": "excogi"
+        },
+        {
+          "Type": "Regex",
+          "Value": "^ecg"
+        },
+        {
+          "Type": "Regex",
+          "Value": "EXPLOITED.?COLLEGE.?GIRLS"
+        }
+      ]
+    },
+    {
+      "Name": "Anabolic.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Contains",
+          "Value": "Diabolic"
+        }
+      ]
+    },
+    {
+      "Name": "Swallowed.com",
+      "IgnoreCategoryInContent": true,
+      "Rules": [
+        {
+          "Type": "Contains",
+          "Value": "Swallowed.com"
+        },
+        {
+          "Type": "Contains",
+          "Value": "www.?Swallowed"
+        }
+      ]
+    },
+    {
+      "Name": "Gia Derza",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "Gia.Derza"
+        }
+      ]
+    },
+    {
+      "Name": "Blacked.com",
+      "IgnoreCategoryInContent": false,
+      "Rules": []
+    },
+    {
+      "Name": "Lisa Rocket",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "Lisa.?Rocket"
+        }
+      ]
+    },
+    {
+      "Name": "Dolly Dyson",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "Dolly.?PDyson"
+        }
+      ]
+    },
+    {
+      "Name": "Anuskatzz",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "anus.?katzz"
+        }
+      ]
+    },
+    {
+      "Name": "Sophia Burns",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "sophia.?burns"
+        }
+      ]
+    },
+    {
+      "Name": "Adriana Chechik",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "AdrinaC.?.?.......cam"
+        },
+        {
+          "Type": "Regex",
+          "Value": "adriana.chechik"
+        }
+      ]
+    },
+    {
+      "Name": "April Bigass",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "April.?Bigass"
+        }
+      ]
+    },
+    {
+      "Name": "Compilations",
+      "IgnoreCategoryInContent": false,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "C.mpilation"
+        }
+      ]
+    },
+    {
+      "Name": "FamilyStrokes",
+      "IgnoreCategoryInContent": true,
+      "Rules": [
+        {
+          "Type": "Regex",
+          "Value": "FAM.?.?YSTROKES"
+        }
+      ]
+    }
+  ],
+  "Options": {
+    "StopOcrAtFirstMatch": true
+  }
+}

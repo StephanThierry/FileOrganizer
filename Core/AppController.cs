@@ -204,6 +204,31 @@ public sealed class AppController : IDisposable
         return new ScriptReport(move, todo.Count(d => d.EffectiveCategory != null), rename, todo.Count(d => d.RenameTo != null), unmatched);
     }
 
+    /// <summary>True when deleting this file puts it in the Recycle Bin (trash): for the question asked before deleting.</summary>
+    public bool CanRecover(FileDecision d) => PathOf(d) is { } path && RecycleBin.IsRecoverable(path);
+
+    /// <summary>
+    /// Deletes the file: to the Recycle Bin (trash), or for good where there is none (a network share), which the interface says
+    /// before asking. The file leaves the result, so it disappears from Review and Unmatched. Returns whether it worked, and a message.
+    /// </summary>
+    public (bool Ok, string Message) DeleteFile(FileDecision d)
+    {
+        string? path = PathOf(d);
+        if (Result == null || path == null) return (false, "There is no file to delete.");
+        try
+        {
+            string name = Path.GetFileName(path);
+            bool recoverable = RecycleBin.Delete(path);
+            Result.Decisions.Remove(d);
+            ResultChanged?.Invoke();
+            return (true, recoverable ? $"Moved {name} to the {RecycleBin.Name}." : $"Deleted {name} permanently: this location has no {RecycleBin.Name}.");
+        }
+        catch (Exception e)
+        {
+            return (false, $"Could not delete {d.FileName}: {e.Message}");
+        }
+    }
+
     /// <summary>Where the file is now (moved files are in their category folder).</summary>
     public string? PathOf(FileDecision d)
     {

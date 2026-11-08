@@ -14,6 +14,8 @@
     <Style Selector="Button.chip:pointerover /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="Background" Value="{DynamicResource AccentWash}"/></Style>
     <Style Selector="TextBlock.bad"><Setter Property="Foreground" Value="{DynamicResource Grease}"/></Style>
     <Style Selector="Image.thumb"><Setter Property="Width" Value="192"/><Setter Property="Height" Value="108"/></Style>
+    <Style Selector="Button.icon.del"><Setter Property="Foreground" Value="{DynamicResource Grease}"/></Style>
+    <Style Selector="Button.icon.del:pointerover /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="Foreground" Value="{DynamicResource GreaseHover}"/><Setter Property="Background" Value="{DynamicResource GreaseWash}"/></Style>
   </UserControl.Styles>
 
   <Grid RowDefinitions="Auto,Auto,*" Margin="12,16,12,12">
@@ -59,9 +61,14 @@
                 <Border Background="{DynamicResource Frame}" CornerRadius="3" Width="192" Height="108" HorizontalAlignment="Left" VerticalAlignment="Top" IsVisible="{Binding !IsVideo}">
                   <PathIcon Data="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z" Foreground="{DynamicResource Muted}" Width="26" Height="26"/>
                 </Border>
-                <Button Grid.Column="1" Classes="icon" Command="{Binding PlayFileCommand}" ToolTip.Tip="Open it (in the default player)" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,34,0,0">
-                  <Path Data="M3,1.5 L3,12.5 L12,7 Z" Fill="{Binding $parent[Button].Foreground}" Width="14" Height="14"/>
-                </Button>
+                <StackPanel Grid.Column="1" Spacing="6" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,22,0,0">
+                  <Button Classes="icon" Command="{Binding PlayFileCommand}" ToolTip.Tip="Open it (in the default player)">
+                    <Path Data="M3,1.5 L3,12.5 L12,7 Z" Fill="{Binding $parent[Button].Foreground}" Width="14" Height="14"/>
+                  </Button>
+                  <Button Classes="icon del" Command="{Binding DeleteCommand}" ToolTip.Tip="Delete the file (to the Recycle Bin, asks first)" AutomationProperties.Name="Delete the file">
+                      <Path Data="M6,19 C6,20.1 6.9,21 8,21 L16,21 C17.1,21 18,20.1 18,19 L18,7 L6,7 Z M19,4 L15.5,4 L14.5,3 L9.5,3 L8.5,4 L5,4 L5,6 L19,6 Z" Fill="{Binding $parent[Button].Foreground}" Width="16" Height="16" Stretch="Uniform"/>
+                    </Button>
+                </StackPanel>
                 <StackPanel Grid.Column="2" Spacing="6">
                   <TextBlock Text="{Binding FileName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
                   <TextBlock Text="No text was found in the file name, the tags or the video." Classes="muted small" IsVisible="{Binding !HasLines}"/>
@@ -121,6 +128,19 @@
           <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right" Margin="0,8,0,0">
             <Button Content="Cancel" Command="{Binding CancelRuleCommand}"/>
             <Button Classes="primary" Content="Add the rule" Command="{Binding AddRuleCommand}" IsEnabled="{Binding CanAddRule}"/>
+          </StackPanel>
+        </StackPanel>
+      </Border>
+    </Grid>
+    <!-- Confirmation before deleting -->
+    <Grid Grid.RowSpan="3" Margin="-12,-16,-12,-12" Background="#80000000" IsVisible="{Binding ConfirmVisible}">
+      <Border Classes="panel" Width="580" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="24">
+        <StackPanel Spacing="12">
+          <TextBlock Classes="h2" Text="{Binding ConfirmTitle}" TextWrapping="Wrap"/>
+          <TextBlock Classes="muted" Text="{Binding ConfirmText}" TextWrapping="Wrap"/>
+          <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right" Margin="0,8,0,0">
+            <Button Content="Cancel" Command="{Binding ConfirmNoCommand}"/>
+            <Button Classes="danger" Content="{Binding ConfirmButton}" Command="{Binding ConfirmYesCommand}"/>
           </StackPanel>
         </StackPanel>
       </Border>

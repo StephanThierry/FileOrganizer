@@ -14,6 +14,8 @@
     <Style Selector="Border.sourcechip"><Setter Property="Background" Value="{DynamicResource Raised}"/><Setter Property="CornerRadius" Value="9"/><Setter Property="Padding" Value="8,1"/></Style>
     <Style Selector="Border.donechip"><Setter Property="Background" Value="{DynamicResource KeepWash}"/><Setter Property="CornerRadius" Value="9"/><Setter Property="Padding" Value="8,1"/></Style>
     <Style Selector="Image.thumb"><Setter Property="Width" Value="192"/><Setter Property="Height" Value="108"/></Style>
+    <Style Selector="Button.icon.del"><Setter Property="Foreground" Value="{DynamicResource Grease}"/></Style>
+    <Style Selector="Button.icon.del:pointerover /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="Foreground" Value="{DynamicResource GreaseHover}"/><Setter Property="Background" Value="{DynamicResource GreaseWash}"/></Style>
   </UserControl.Styles>
 
   <!-- Fixed column widths: the rows are created as they scroll into view, and content-sized columns shared with the header would
@@ -84,9 +86,14 @@
                     <PathIcon Data="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z" Foreground="{DynamicResource Muted}" Width="26" Height="26"/>
                   </Border>
                   <!-- Play: opens the file in the default player -->
-                  <Button Grid.Column="1" Classes="icon" Command="{Binding PlayFileCommand}" ToolTip.Tip="Open it (in the default player)" VerticalAlignment="Center" HorizontalAlignment="Center">
-                    <Path Data="M3,1.5 L3,12.5 L12,7 Z" Fill="{Binding $parent[Button].Foreground}" Width="14" Height="14"/>
-                  </Button>
+                  <StackPanel Grid.Column="1" Spacing="6" VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <Button Classes="icon" Command="{Binding PlayFileCommand}" ToolTip.Tip="Open it (in the default player)">
+                      <Path Data="M3,1.5 L3,12.5 L12,7 Z" Fill="{Binding $parent[Button].Foreground}" Width="14" Height="14"/>
+                    </Button>
+                    <Button Classes="icon del" Command="{Binding DeleteCommand}" ToolTip.Tip="Delete the file (to the Recycle Bin, asks first)" AutomationProperties.Name="Delete the file">
+                      <Path Data="M6,19 C6,20.1 6.9,21 8,21 L16,21 C17.1,21 18,20.1 18,19 L18,7 L6,7 Z M19,4 L15.5,4 L14.5,3 L9.5,3 L8.5,4 L5,4 L5,6 L19,6 Z" Fill="{Binding $parent[Button].Foreground}" Width="16" Height="16" Stretch="Uniform"/>
+                    </Button>
+                  </StackPanel>
                   <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="3">
                     <TextBlock Text="{Binding FileName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
                     <StackPanel Orientation="Horizontal" Spacing="8">

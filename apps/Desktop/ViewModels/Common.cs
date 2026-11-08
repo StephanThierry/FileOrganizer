@@ -37,6 +37,19 @@ public abstract partial class ViewModelBase : ObservableObject
     [RelayCommand] private void ConfirmYes() { var yes = confirmed; ConfirmVisible = false; confirmed = null; yes?.Invoke(); }
     [RelayCommand] private void ConfirmNo() { ConfirmVisible = false; confirmed = null; }
 
+    /// <summary>Asks, then deletes the file of a row: to the Recycle Bin where there is one, else for good (and says which).</summary>
+    protected void AskDeleteFile(AppController app, FileDecision d)
+    {
+        string? path = app.PathOf(d);
+        if (path == null || !File.Exists(path)) { ShowToast("The file is not there: " + path); return; }
+        bool recoverable = app.CanRecover(d);
+        Ask(recoverable ? $"Move this file to the {RecycleBin.Name}?" : "Delete this file permanently?",
+            $"{d.FileName}\n{Path.GetDirectoryName(path)}\n\n"
+            + (recoverable ? $"You can get it back from the {RecycleBin.Name}." : $"This location has no {RecycleBin.Name}: the file is gone for good."),
+            recoverable ? $"Move to {RecycleBin.Name}" : "Delete permanently",
+            () => { var (ok, message) = app.DeleteFile(d); ShowToast(message, ok ? 6000 : 10000); });
+    }
+
     /// <summary>Set by the view: opens a folder in the file manager.</summary>
     public Func<string, Task>? OpenFolder { get; set; }
 

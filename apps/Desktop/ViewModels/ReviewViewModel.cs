@@ -65,7 +65,7 @@ public partial class ReviewViewModel : ViewModelBase
         var keep = new HashSet<FileDecision>(wanted);
         foreach (var gone in rows.Keys.Where(k => !keep.Contains(k)).ToList()) rows.Remove(gone);
         foreach (var d in wanted)
-            if (!rows.ContainsKey(d)) rows[d] = new FileRow(d, app, Choices, Play, UpdateSummary);
+            if (!rows.ContainsKey(d)) rows[d] = new FileRow(d, app, Choices, Play, UpdateSummary) { DeleteRequested = row => AskDeleteFile(app, row.Decision) };
 
         var current = SelectedFilter;
         Filters.Clear();
@@ -229,4 +229,8 @@ public partial class FileRow : ObservableObject
     }
 
     [RelayCommand] private void PlayFile() => play(app.PathOf(Decision));
+
+    /// <summary>Set by the screen: asks before deleting this file.</summary>
+    public Action<FileRow>? DeleteRequested { get; set; }
+    [RelayCommand] private void Delete() => DeleteRequested?.Invoke(this);
 }

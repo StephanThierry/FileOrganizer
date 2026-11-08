@@ -567,6 +567,29 @@ public class AppControllerTests : IDisposable
     }
 
     [Fact]
+    public void DeletingAFileTakesItOutOfTheResult()
+    {
+        File.WriteAllText(Path.Combine(Files, "Show S01.txt"), "x");
+        File.WriteAllText(Path.Combine(Files, "gone.txt"), "x");
+        using var app = Open(Make.Rules(Make.Cat("Series", true, ("Regex", @"S\d\d"))));
+        app.SetTargetFolder(Files);
+        Scan(app);
+        var matched = app.Result!.Decisions.Single(d => d.FileName == "Show S01.txt");
+        var unmatched = app.Result.Decisions.Single(d => d.FileName == "gone.txt");
+
+        var (ok, message) = app.DeleteFile(unmatched);
+        Assert.True(ok, message);
+        Assert.False(File.Exists(Path.Combine(Files, "gone.txt")));
+        Assert.DoesNotContain(app.Result.Decisions, d => d.FileName == "gone.txt");
+        Assert.Contains("gone.txt", message);
+
+        (ok, message) = app.DeleteFile(matched);
+        Assert.True(ok, message);
+        Assert.Empty(app.Result.Decisions);
+        Assert.Empty(app.Pending);
+    }
+
+    [Fact]
     public void VideoSamplingStartsWithTheFirstFrame()
     {
         var times = OpenCvVideoOcr.SampleTimes(60);

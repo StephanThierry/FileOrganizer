@@ -1,0 +1,34 @@
+@* Asks before deleting a file: to the Recycle Bin where there is one, else for good (and says which). *@
+@inject AppController App
+
+@if (Decision != null)
+{
+    var path = App.PathOf(Decision);
+    var recoverable = App.CanRecover(Decision);
+    <div class="dialog-backdrop" @onclick="Cancel">
+        <div class="dialog" role="alertdialog" aria-modal="true" aria-labelledby="delete-title" @onclick:stopPropagation="true">
+            <h2 id="delete-title">@(recoverable ? $"Move this file to the {RecycleBin.Name}?" : "Delete this file permanently?")</h2>
+            <p><strong>@Decision.FileName</strong><br />@(path == null ? "" : System.IO.Path.GetDirectoryName(path))</p>
+            <p>@(recoverable ? $"You can get it back from the {RecycleBin.Name}." : $"This location has no {RecycleBin.Name}: the file is gone for good.")</p>
+            <div class="buttons">
+                <button @onclick="Cancel">Cancel</button>
+                <button class="danger" @onclick="Delete">@(recoverable ? $"Move to {RecycleBin.Name}" : "Delete permanently")</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public FileDecision? Decision { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+    /// <summary>The file was deleted, or it failed: the message to show.</summary>
+    [Parameter] public EventCallback<(bool Ok, string Message)> OnDone { get; set; }
+
+    private Task Cancel() => OnCancel.InvokeAsync();
+
+    private Task Delete()
+    {
+        var result = App.DeleteFile(Decision!);
+        return OnDone.InvokeAsync(result);
+    }
+}

@@ -49,10 +49,13 @@
                             @if (d.OcrCorrupt) { <span class="muted">The video can't be read.</span> }
                         </div>
                     </div>
+                    <div class="un-side">
                     <select value="@FileDecision.LeaveHere" @onchange="e => Assign(d, e.Value!.ToString()!)" aria-label="Where @d.FileName goes">
                         <option value="@FileDecision.LeaveHere">@FileDecision.LeaveHere</option>
                         @foreach (var c in App.CategoryNames()) { <option value="@c">@c</option> }
                     </select>
+                    <button class="icon del" @onclick="() => deleting = d" title="Delete the file (asks first)" aria-label="Delete @d.FileName"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill="currentColor" /></svg></button>
+                    </div>
                 </div>
             }
         </div>
@@ -89,6 +92,8 @@
     </div>
 }
 
+<DeleteFileDialog Decision="deleting" OnCancel="() => deleting = null" OnDone="Deleted" />
+
 @if (toast != null)
 {
     <div class="toast" role="status">@toast</div>
@@ -101,6 +106,7 @@
     private bool ruleOpen, previewBad, canAdd;
     private string ruleText = "", ruleType = "Contains", ruleCategory = "", newCategory = "", preview = "";
     private string? toast;
+    private FileDecision? deleting;
     private CancellationTokenSource? toastTimer;
 
     protected override void OnInitialized()
@@ -117,6 +123,12 @@
         index = new Dictionary<FileDecision, int>();
         for (int i = 0; i < decisions.Count; i++) index[decisions[i]] = i;
         rows = decisions.Where(d => d.Category == null && d.OverrideCategory == null).ToList();
+    }
+
+    private void Deleted((bool Ok, string Message) result)
+    {
+        deleting = null;
+        ShowToast(result.Message, result.Ok ? 6000 : 10000);
     }
 
     private int IndexOf(FileDecision d) => index.TryGetValue(d, out var i) ? i : -1;
