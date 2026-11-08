@@ -9,7 +9,7 @@
     <div class="page-head">
         <div>
             <h1>Rules</h1>
-            <p>Each category is a folder. A file goes to the first category in the list that matches its name, its title or comment tag, or the text in the video. Put the more specific categories first.</p>
+            <p>Each category is a folder. The list is alphabetical. A file goes to the category with the highest priority (the lowest number) that matches its name, its title or comment tag, or the text in the video. Use the arrows to give the more specific categories a higher priority.</p>
         </div>
         <div class="inline">
             <button disabled="@(!edited)" @onclick="Revert">Undo changes</button>
@@ -29,18 +29,19 @@
     <div class="cat-layout">
         <div>
             <div class="cat-list">
-                @foreach (var (c, i) in cats.Select((c, i) => (c, i)))
+                @foreach (var c in cats.OrderBy(c => c.Name, StringComparer.CurrentCultureIgnoreCase))
                 {
                     <button class="cat-item @(c == selected ? "selected" : "")" @onclick="() => selected = c">
-                        <span>@(c.Name.Length == 0 ? "(no name)" : c.Name)</span><span class="muted">@FilesOf(c)</span>
+                        <span>@(c.Name.Length == 0 ? "(no name)" : c.Name)</span>
+                        <span class="muted">Priority @(cats.IndexOf(c) + 1)@(FilesOf(c).Length > 0 ? " · " + FilesOf(c) : "")</span>
                     </button>
                 }
                 @if (cats.Count == 0) { <p class="muted" style="padding:12px">No categories yet.</p> }
             </div>
             <p class="inline" style="margin-top:10px">
                 <button @onclick="AddCategory">Add category</button>
-                <button disabled="@(selected == null || cats.IndexOf(selected) <= 0)" @onclick="() => Move(-1)" aria-label="Move up">↑</button>
-                <button disabled="@(selected == null || cats.IndexOf(selected) >= cats.Count - 1)" @onclick="() => Move(1)" aria-label="Move down">↓</button>
+                <button disabled="@(selected == null || cats.IndexOf(selected) <= 0)" @onclick="() => Move(-1)" title="Higher priority: checked earlier (the list stays alphabetical; the priority number changes)" aria-label="Higher priority">↑</button>
+                <button disabled="@(selected == null || cats.IndexOf(selected) >= cats.Count - 1)" @onclick="() => Move(1)" title="Lower priority: checked later (the list stays alphabetical; the priority number changes)" aria-label="Lower priority">↓</button>
                 <button class="danger" disabled="@(selected == null)" @onclick="DeleteCategory">Delete</button>
             </p>
         </div>
@@ -117,7 +118,7 @@
     {
         string? keep = selected?.Name;
         cats = App.Settings.Clone().Categories;
-        selected = cats.FirstOrDefault(c => c.Name == keep) ?? cats.FirstOrDefault();
+        selected = cats.FirstOrDefault(c => c.Name == keep) ?? cats.OrderBy(c => c.Name, StringComparer.CurrentCultureIgnoreCase).FirstOrDefault();
         edited = false;
         problems = new();
     }
@@ -160,9 +161,11 @@
     private void DeleteCategory()
     {
         if (selected == null) return;
-        int at = cats.IndexOf(selected);
+        var sorted = cats.OrderBy(c => c.Name, StringComparer.CurrentCultureIgnoreCase).ToList();
+        int at = sorted.IndexOf(selected);
         cats.Remove(selected);
-        selected = cats.Count == 0 ? null : cats[Math.Min(at, cats.Count - 1)];
+        sorted.Remove(selected);
+        selected = sorted.Count == 0 ? null : sorted[Math.Min(at, sorted.Count - 1)];
         Edited();
     }
 
