@@ -145,8 +145,7 @@ Opens http://127.0.0.1:5078 (this computer only). To use it from another compute
 ```cmd
 dotnet run --project apps/Cli -- "C:\Path\To\Your\Files"
 ```
-or, after `dotnet build`, `apps\Cliin\Debug
-et10.0\FileOrganizer.Cli.exe "C:\Path\To\Your\Files"` (on Linux `./FileOrganizer.Cli "/path/to/your/files"`).
+or, after `dotnet build`, `apps\Cli\bin\Debug\net10.0\FileOrganizer.Cli.exe "C:\Path\To\Your\Files"` (on Linux `./FileOrganizer.Cli "/path/to/your/files"`).
 
 ### Tests
 ```cmd
