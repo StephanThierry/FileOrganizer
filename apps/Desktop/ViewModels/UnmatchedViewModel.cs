@@ -98,7 +98,8 @@ public partial class UnmatchedViewModel : ViewModelBase
     private void UpdatePreview()
     {
         string text = (RuleText ?? "").Trim();
-        string category = (NewCategory ?? "").Trim().Length > 0 ? NewCategory.Trim() : (RuleCategory ?? "");
+        string typed = (NewCategory ?? "").Trim();
+        string category = typed.Length > 0 ? typed : (RuleCategory ?? "");
         var rule = new Rule(RuleType, text);
         var error = RuleMatcher.Validate(rule);
         RulePreviewBad = error != null;
@@ -116,7 +117,8 @@ public partial class UnmatchedViewModel : ViewModelBase
     [RelayCommand]
     private void AddRule()
     {
-        string category = NewCategory.Trim().Length > 0 ? NewCategory.Trim() : (RuleCategory ?? "");
+        string typed = (NewCategory ?? "").Trim();
+        string category = typed.Length > 0 ? typed : (RuleCategory ?? "");
         string message = app.AddRule(category, RuleType, RuleText, out bool ok);
         ShowToast(message, ok ? 5000 : 9000);
         if (ok) RuleVisible = false;
