@@ -13,7 +13,7 @@
     <Style Selector="Border.frow.done"><Setter Property="Opacity" Value="0.5"/></Style>
     <Style Selector="Border.sourcechip"><Setter Property="Background" Value="{DynamicResource Raised}"/><Setter Property="CornerRadius" Value="9"/><Setter Property="Padding" Value="8,1"/></Style>
     <Style Selector="Border.donechip"><Setter Property="Background" Value="{DynamicResource KeepWash}"/><Setter Property="CornerRadius" Value="9"/><Setter Property="Padding" Value="8,1"/></Style>
-    <Style Selector="Image.thumb"><Setter Property="Width" Value="96"/><Setter Property="Height" Value="64"/></Style>
+    <Style Selector="Image.thumb"><Setter Property="Width" Value="192"/><Setter Property="Height" Value="128"/></Style>
   </UserControl.Styles>
 
   <!-- Fixed column widths: the rows are created as they scroll into view, and content-sized columns shared with the header would
@@ -64,7 +64,7 @@
     <Border Grid.Row="3" BorderBrush="{DynamicResource Rule}" BorderThickness="1" CornerRadius="10" ClipToBounds="True" IsVisible="{Binding HasRows}">
       <DockPanel>
         <Border DockPanel.Dock="Top" Background="{DynamicResource Table}" Padding="12,6,32,6">
-          <Grid ColumnDefinitions="104,40,*,210" ColumnSpacing="12">
+          <Grid ColumnDefinitions="208,40,*,210" ColumnSpacing="12">
             <TextBlock Grid.Column="2" Text="File, and why it matches" Classes="muted small" FontWeight="SemiBold"/>
             <TextBlock Grid.Column="3" Text="Goes to" Classes="muted small" FontWeight="SemiBold"/>
           </Grid>
@@ -73,8 +73,8 @@
           <ListBox.ItemTemplate>
             <DataTemplate x:DataType="vm:FileRow">
               <Border Classes="frow" Classes.done="{Binding IsDone}">
-                <Grid ColumnDefinitions="104,40,*,210" ColumnSpacing="12">
-                  <Border Background="{DynamicResource Frame}" CornerRadius="3" Padding="4" HorizontalAlignment="Left" VerticalAlignment="Center" Width="104" Height="72">
+                <Grid ColumnDefinitions="208,40,*,210" ColumnSpacing="12">
+                  <Border Background="{DynamicResource Frame}" CornerRadius="3" Padding="4" HorizontalAlignment="Left" VerticalAlignment="Center" Width="208" Height="136">
                     <Panel>
                       <Image Classes="thumb" Source="{Binding Thumb}" Stretch="UniformToFill" IsVisible="{Binding IsVideo}"/>
                       <PathIcon Data="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z" Foreground="{DynamicResource Muted}" Width="26" Height="26" IsVisible="{Binding !IsVideo}"/>
