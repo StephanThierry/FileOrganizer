@@ -15,6 +15,34 @@ public sealed class Settings
 
     public Settings Clone() => JsonSerializer.Deserialize<Settings>(JsonSerializer.Serialize(this, SettingsStore.Json), SettingsStore.Json)!;
 
+    /// <summary>
+    /// Joins categories that have the same name (ignoring case) into the first of them: every rule that is not there yet is added to it.
+    /// The name stays a rule of the category unless every one of them said to ignore it. Returns how many categories were joined away.
+    /// </summary>
+    public int MergeDuplicateCategories()
+    {
+        Normalize();
+        var first = new Dictionary<string, Category>(StringComparer.OrdinalIgnoreCase);
+        var merged = new List<Category>();
+        int joined = 0;
+        foreach (var c in Categories)
+        {
+            if (c.Name.Length == 0 || !first.TryGetValue(c.Name, out var keep))
+            {
+                if (c.Name.Length > 0) first[c.Name] = c;
+                merged.Add(c);
+                continue;
+            }
+            joined++;
+            keep.IgnoreCategoryInContent &= c.IgnoreCategoryInContent;
+            foreach (var r in c.Rules)
+                if (!keep.Rules.Any(k => k.Type == r.Type && k.Value.Trim().Equals(r.Value.Trim(), StringComparison.OrdinalIgnoreCase)))
+                    keep.Rules.Add(r);
+        }
+        Categories = merged;
+        return joined;
+    }
+
     /// <summary>Fills in what is missing, so code never meets a null list or name.</summary>
     public void Normalize()
     {

@@ -578,6 +578,24 @@ public class AppControllerTests : IDisposable
     }
 
     [Fact]
+    public void CategoriesWithTheSameNameAreJoinedWhenLoaded()
+    {
+        var s = Make.Rules(
+            Make.Cat("Other Cat", true, ("Contains", "x"), ("Regex", "a.b")),
+            Make.Cat("Mid", false, ("Contains", "m")),
+            Make.Cat("other cat", false, ("Contains", "X"), ("Contains", "y")));
+        using var app = Open(s);
+        Assert.Equal(new[] { "Other Cat", "Mid" }, app.Settings.Categories.Select(c => c.Name));
+        var other = app.Settings.Categories[0];
+        Assert.Equal(new[] { "x", "a.b", "y" }, other.Rules.Select(r => r.Value));   // "X" was there already
+        Assert.False(other.IgnoreCategoryInContent);                                  // one of them used the name as a rule
+        // and it was written back, so the next start sees one category
+        using var again = AppController.Open(Data);
+        Assert.Equal(2, again.Settings.Categories.Count);
+        Assert.True(File.Exists(SettingsStore.PathIn(Data) + ".bck"));
+    }
+
+    [Fact]
     public void AddingARuleWorksWhenSettingsRepeatACategoryName()
     {
         using var app = Open(Make.Rules(Make.Cat("Other Cat", true, ("Contains", "x")), Make.Cat("Other Cat", true, ("Contains", "y"))));

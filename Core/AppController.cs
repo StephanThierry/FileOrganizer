@@ -50,7 +50,16 @@ public sealed class AppController : IDisposable
     {
         DataFolder = dataFolder;
         IsFirstRun = !SettingsStore.Exists(dataFolder);
-        try { Settings = SettingsStore.Load(dataFolder); }
+        try
+        {
+            Settings = SettingsStore.Load(dataFolder);
+            // Categories with the same name are joined once, here (the old file is kept as settings.json.bck)
+            if (Settings.MergeDuplicateCategories() > 0)
+            {
+                try { SettingsStore.Save(dataFolder, Settings); }
+                catch (Exception) { /* read-only: it is joined in memory and saved with the next save */ }
+            }
+        }
         catch (InvalidDataException e) { Settings = new Settings(); SettingsError = e.Message; }
 
         try
