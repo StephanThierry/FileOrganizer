@@ -66,7 +66,7 @@
     <Border Grid.Row="3" BorderBrush="{DynamicResource Rule}" BorderThickness="1" CornerRadius="10" ClipToBounds="True" IsVisible="{Binding HasRows}">
       <DockPanel>
         <Border DockPanel.Dock="Top" Background="{DynamicResource Table}" Padding="12,6,32,6">
-          <Grid ColumnDefinitions="606,40,*,210" ColumnSpacing="12">
+          <Grid ColumnDefinitions="606,40,*,252" ColumnSpacing="12">
             <TextBlock Grid.Column="2" Text="File, and why it matches" Classes="muted small" FontWeight="SemiBold"/>
             <TextBlock Grid.Column="3" Text="Goes to" Classes="muted small" FontWeight="SemiBold"/>
           </Grid>
@@ -75,7 +75,7 @@
           <ListBox.ItemTemplate>
             <DataTemplate x:DataType="vm:FileRow">
               <Border Classes="frow" Classes.done="{Binding IsDone}">
-                <Grid ColumnDefinitions="606,40,*,210" ColumnSpacing="12">
+                <Grid ColumnDefinitions="606,40,*,252" ColumnSpacing="12">
                   <!-- Three pictures spread over the video; other files get a file icon -->
                   <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Left" VerticalAlignment="Center" IsVisible="{Binding IsVideo}">
                     <Border Background="{DynamicResource Frame}" CornerRadius="3" Width="192" Height="108" ClipToBounds="True"><Image Classes="thumb" Source="{Binding Thumb1}" Stretch="UniformToFill"/></Border>
@@ -103,7 +103,14 @@
                     <TextBlock Text="{Binding RenameText}" IsVisible="{Binding HasRename}" Classes="small" Foreground="{DynamicResource Accent}" TextTrimming="CharacterEllipsis"/>
                   </StackPanel>
                   <StackPanel Grid.Column="3" VerticalAlignment="Center" Spacing="4">
-                    <ComboBox ItemsSource="{Binding Choices}" SelectedItem="{Binding Choice}" IsEnabled="{Binding !IsDone}" HorizontalAlignment="Stretch"/>
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                      <ComboBox ItemsSource="{Binding Choices}" SelectedItem="{Binding Choice}" IsEnabled="{Binding !IsDone}" HorizontalAlignment="Stretch"/>
+                      <!-- Move just this file now -->
+                      <Button Grid.Column="1" Classes="icon" Command="{Binding MoveCommand}" IsEnabled="{Binding CanMove}" VerticalAlignment="Center"
+                              ToolTip.Tip="Move this file now (to the folder chosen here; nothing is overwritten)" AutomationProperties.Name="Move this file now">
+                        <Path Data="M20,6 L12,6 L10,4 L4,4 C2.9,4 2.01,4.9 2.01,6 L2,18 C2,19.1 2.9,20 4,20 L20,20 C21.1,20 22,19.1 22,18 L22,8 C22,6.9 21.1,6 20,6 Z M12,17 L12,14 L8,14 L8,12 L12,12 L12,9 L16,13 Z" Fill="{Binding $parent[Button].Foreground}" Width="16" Height="16" Stretch="Uniform"/>
+                      </Button>
+                    </Grid>
                     <Border Classes="donechip" IsVisible="{Binding IsDone}" HorizontalAlignment="Left"><TextBlock Text="Moved" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource Keep}"/></Border>
                   </StackPanel>
                 </Grid>

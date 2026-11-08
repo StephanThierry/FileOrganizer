@@ -81,6 +81,10 @@
                             @foreach (var c in App.CategoryNames()) { <option value="@c">@c</option> }
                         </select>
                         @if (d.Done) { <span class="chip done">Moved</span> }
+                        else
+                        {
+                            <button class="icon" disabled="@(d.EffectiveCategory == null)" @onclick="() => MoveOne(d)" title="Move this file now (to the folder chosen here; nothing is overwritten)" aria-label="Move @d.FileName now"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-8 11v-3H8v-2h4V9l4 4-4 4z" fill="currentColor" /></svg></button>
+                        }
                     </div>
                 </div>
             }
@@ -203,6 +207,15 @@
     }
 
     private void Play(FileDecision d) => playing = d;
+
+    // The move icon of one row: moves just that file, at once (nothing is overwritten)
+    private void MoveOne(FileDecision d)
+    {
+        var report = App.MoveOne(d, alsoRename);
+        string text = report.Summary;
+        if (report.Messages.Count > 0) text += " " + string.Join(" ", report.Messages.Take(2));
+        ShowToast(text, report.Messages.Count > 0 ? 10000 : 5000);
+    }
 
     private void Deleted((bool Ok, string Message) result)
     {

@@ -193,6 +193,15 @@ public sealed class AppController : IDisposable
         return report;
     }
 
+    /// <summary>Moves one file now to the folder it goes to (never overwriting). Nothing happens for a file that stays or was moved.</summary>
+    public MoveReport MoveOne(FileDecision d, bool alsoRename)
+    {
+        if (Result == null || d.Done || d.EffectiveCategory == null) return new MoveReport(0, 0, 0, 0, new List<string>());
+        var report = MoveExecutor.Apply(Result.Folder, new[] { d }, alsoRename);
+        ResultChanged?.Invoke();
+        return report;
+    }
+
     /// <summary>Writes move_files, rename_files and unmatched_files.txt in the scanned folder, from the result as it is now.</summary>
     public ScriptReport WriteScripts()
     {

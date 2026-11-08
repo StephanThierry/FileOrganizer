@@ -567,6 +567,29 @@ public class AppControllerTests : IDisposable
     }
 
     [Fact]
+    public void MovingOneFileLeavesTheOthers()
+    {
+        File.WriteAllText(Path.Combine(Files, "Show S01.txt"), "x");
+        File.WriteAllText(Path.Combine(Files, "Show S02.txt"), "x");
+        File.WriteAllText(Path.Combine(Files, "other.txt"), "x");
+        using var app = Open(Make.Rules(Make.Cat("Series", true, ("Regex", @"S\d\d"))));
+        app.SetTargetFolder(Files);
+        Scan(app);
+        var one = app.Result!.Decisions.Single(d => d.FileName == "Show S01.txt");
+
+        var report = app.MoveOne(one, alsoRename: false);
+        Assert.Equal(1, report.Moved);
+        Assert.True(one.Done);
+        Assert.True(File.Exists(Path.Combine(Files, "Series", "Show S01.txt")));
+        Assert.True(File.Exists(Path.Combine(Files, "Show S02.txt")));   // the other match was not touched
+        Assert.Single(app.Pending);
+
+        // a file that stays, or was moved already, does nothing
+        Assert.Equal(0, app.MoveOne(one, false).Moved);
+        Assert.Equal(0, app.MoveOne(app.Result.Decisions.Single(d => d.FileName == "other.txt"), false).Moved);
+    }
+
+    [Fact]
     public void DeletingAFileTakesItOutOfTheResult()
     {
         File.WriteAllText(Path.Combine(Files, "Show S01.txt"), "x");
