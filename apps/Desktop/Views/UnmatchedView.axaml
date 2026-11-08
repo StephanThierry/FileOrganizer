@@ -13,7 +13,7 @@
       <Setter Property="Background" Value="{DynamicResource Raised}"/><Setter Property="Margin" Value="0,0,6,6"/><Setter Property="Cursor" Value="Hand"/></Style>
     <Style Selector="Button.chip:pointerover /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="Background" Value="{DynamicResource AccentWash}"/></Style>
     <Style Selector="TextBlock.bad"><Setter Property="Foreground" Value="{DynamicResource Grease}"/></Style>
-    <Style Selector="Image.thumb"><Setter Property="Width" Value="96"/><Setter Property="Height" Value="64"/></Style>
+    <Style Selector="Image.thumb"><Setter Property="Width" Value="192"/><Setter Property="Height" Value="108"/></Style>
   </UserControl.Styles>
 
   <Grid RowDefinitions="Auto,Auto,*" Margin="12,16,12,12">
@@ -49,14 +49,17 @@
         <ListBox.ItemTemplate>
           <DataTemplate x:DataType="vm:UnmatchedRow">
             <Border Classes="frow">
-              <Grid ColumnDefinitions="104,40,*,210" ColumnSpacing="12">
-                <Border Background="{DynamicResource Frame}" CornerRadius="3" Padding="4" HorizontalAlignment="Left" VerticalAlignment="Top" Width="104" Height="72">
-                  <Panel>
-                    <Image Classes="thumb" Source="{Binding Thumb}" Stretch="UniformToFill" IsVisible="{Binding IsVideo}"/>
-                    <PathIcon Data="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z" Foreground="{DynamicResource Muted}" Width="26" Height="26" IsVisible="{Binding !IsVideo}"/>
-                  </Panel>
+              <Grid ColumnDefinitions="606,40,*,210" ColumnSpacing="12">
+                <!-- Three pictures spread over the video; other files get a file icon -->
+                <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Left" VerticalAlignment="Top" IsVisible="{Binding IsVideo}">
+                  <Border Background="{DynamicResource Frame}" CornerRadius="3" Width="192" Height="108" ClipToBounds="True"><Image Classes="thumb" Source="{Binding Thumb1}" Stretch="UniformToFill"/></Border>
+                  <Border Background="{DynamicResource Frame}" CornerRadius="3" Width="192" Height="108" ClipToBounds="True"><Image Classes="thumb" Source="{Binding Thumb2}" Stretch="UniformToFill"/></Border>
+                  <Border Background="{DynamicResource Frame}" CornerRadius="3" Width="192" Height="108" ClipToBounds="True"><Image Classes="thumb" Source="{Binding Thumb3}" Stretch="UniformToFill"/></Border>
+                </StackPanel>
+                <Border Background="{DynamicResource Frame}" CornerRadius="3" Width="192" Height="108" HorizontalAlignment="Left" VerticalAlignment="Top" IsVisible="{Binding !IsVideo}">
+                  <PathIcon Data="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z" Foreground="{DynamicResource Muted}" Width="26" Height="26"/>
                 </Border>
-                <Button Grid.Column="1" Classes="icon" Command="{Binding PlayFileCommand}" ToolTip.Tip="Open it (in the default player)" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,16,0,0">
+                <Button Grid.Column="1" Classes="icon" Command="{Binding PlayFileCommand}" ToolTip.Tip="Open it (in the default player)" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,34,0,0">
                   <Path Data="M3,1.5 L3,12.5 L12,7 Z" Fill="{Binding $parent[Button].Foreground}" Width="14" Height="14"/>
                 </Button>
                 <StackPanel Grid.Column="2" Spacing="6">

@@ -33,7 +33,13 @@
             @foreach (var d in rows.Take(shown))
             {
                 <div class="un-row" @key="d">
-                    <Thumb Decision="d" Index="IndexOf(d)" />
+                    <div class="fo-thumbs">
+                        @if (d.IsVideo)
+                        {
+                            @for (int part = 0; part < 3; part++) { <Thumb Decision="d" Index="IndexOf(d)" Part="part" /> }
+                        }
+                        else { <Thumb Decision="d" Index="IndexOf(d)" /> }
+                    </div>
                     <div class="info">
                         <div class="name">@d.FileName</div>
                         <div class="chips">
