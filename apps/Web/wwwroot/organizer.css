@@ -1,0 +1,43 @@
+/* File Organizer specific parts, on top of app.css */
+.fo-list { background: var(--sheet); border: 1px solid var(--rule); border-radius: var(--radius-sheet); overflow: hidden; margin-bottom: 90px; }
+.fo-row { display: grid; grid-template-columns: 96px 40px minmax(0, 1fr) 260px; gap: 12px; align-items: center; padding: 8px 14px; border-top: 1px solid var(--rule); }
+.fo-row.head { border-top: 0; color: var(--muted); font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; background: var(--table); }
+.fo-row.is-done { opacity: .55; }
+.fo-thumb { width: 96px; height: 54px; background: var(--frame); border-radius: 3px; display: grid; place-items: center; color: var(--muted); overflow: hidden; }
+.fo-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.fo-row .info { min-width: 0; }
+.fo-row .name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fo-row .why { font-size: .85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fo-row .rename { font-size: .8rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fo-row .goes { display: flex; gap: 8px; align-items: center; }
+.fo-row .goes select { width: 100%; }
+.chip { display: inline-block; padding: 1px 8px; border-radius: 10px; background: var(--table); border: 1px solid var(--rule); font-size: .78rem; }
+.chip.done { background: var(--keep-wash); color: var(--keep); border-color: var(--keep); }
+.chip.btn { cursor: pointer; font: inherit; font-size: .85rem; color: var(--ink); text-align: left; }
+.chip.btn:hover { border-color: var(--accent); color: var(--accent); }
+.chip.btn small { color: var(--muted); margin-right: 6px; }
+.result { background: var(--keep-wash); border: 1px solid var(--keep); border-radius: var(--radius-sheet); padding: 4px 16px; margin-bottom: 16px; }
+.result p { margin: 10px 0; word-break: break-all; }
+.actionbar { position: fixed; left: 0; right: 0; bottom: 0; background: var(--sheet); border-top: 1px solid var(--rule); z-index: 20; }
+.actionbar .inner { display: flex; align-items: center; gap: 16px; max-width: 1200px; margin: 0 auto; padding: 12px 20px; }
+.actionbar .count small { display: block; color: var(--muted); }
+.player { width: min(900px, 100%); }
+.player-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 10px; }
+.player-head h2 { font-size: 1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.un-row { display: grid; grid-template-columns: 96px minmax(0, 1fr) 260px; gap: 12px; padding: 10px 14px; border-top: 1px solid var(--rule); align-items: start; }
+.un-row .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.cat-layout { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 20px; align-items: start; }
+.cat-list { background: var(--sheet); border: 1px solid var(--rule); border-radius: var(--radius-sheet); overflow: hidden; }
+.cat-item { display: flex; justify-content: space-between; gap: 8px; width: 100%; border: 0; border-top: 1px solid var(--rule); border-radius: 0; background: none; text-align: left; padding: 10px 14px; }
+.cat-item:first-child { border-top: 0; }
+.cat-item.selected { background: var(--keep-wash); font-weight: 600; }
+.rule-line { display: grid; grid-template-columns: 130px minmax(0, 1fr) auto; gap: 8px; margin-bottom: 8px; }
+.rule-error { color: var(--grease); font-size: .85rem; margin: -4px 0 8px 138px; }
+.warn-text { color: var(--grease); }
+@media (max-width: 800px) {
+  .fo-row { grid-template-columns: 70px minmax(0, 1fr); }
+  .fo-row .goes, .fo-row.head { grid-column: 1 / -1; }
+  .fo-row > button.icon { display: none; }
+  .un-row { grid-template-columns: 1fr; }
+  .cat-layout { grid-template-columns: 1fr; }
+}

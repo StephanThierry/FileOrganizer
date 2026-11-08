@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!--
+    Browser interface. Runs on the machine with the files (also a headless Linux server or NAS)
+    and is used from any browser. Start: FileOrganizer.Web, see Program.cs for the arguments.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
+    <AssemblyName>FileOrganizer.Web</AssemblyName>
+    <ApplicationIcon>appicon.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../FileOrganizer.csproj" />
+  </ItemGroup>
+
+</Project>

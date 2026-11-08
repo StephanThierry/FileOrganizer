@@ -1,0 +1,242 @@
+@page "/"
+@page "/review"
+@implements IDisposable
+@inject AppController App
+@inject NavigationManager Nav
+
+<PageTitle>Review</PageTitle>
+
+<div class="page">
+    <div class="page-head">
+        <div>
+            <h1>Review</h1>
+            <p>Where each file will go, and why. Choose another folder for a file, or leave it where it is. Then move the files now, or write a script and run it yourself.</p>
+        </div>
+    </div>
+
+    @if (scriptsText != null)
+    {
+        <div class="result" role="status">
+            <p>@scriptsText</p>
+        </div>
+    }
+
+    @if (App.Result == null)
+    {
+        <div class="empty">
+            <h2>Nothing to review yet</h2>
+            <p>Scan a folder first. The files that match a rule are listed here.</p>
+            <button class="primary big" @onclick='() => Nav.NavigateTo("scan")'>Go to scan</button>
+        </div>
+    }
+    else if (all.Count == 0)
+    {
+        <div class="empty">
+            <h2>No file matched a rule</h2>
+            <p>Look at the unmatched files and make rules from the text that was found in them.</p>
+            <button class="primary big" @onclick='() => Nav.NavigateTo("unmatched")'>Look at the unmatched files</button>
+        </div>
+    }
+    else
+    {
+        <div class="toolbar">
+            <label class="inline">Show
+                <select @bind="filter" @bind:after="Reset" aria-label="Show category">
+                    <option value="">All categories</option>
+                    @foreach (var c in all.Select(d => d.Category ?? d.OverrideCategory!).Distinct().OrderBy(n => n, StringComparer.OrdinalIgnoreCase)) { <option value="@c">@c</option> }
+                </select>
+            </label>
+            <input type="search" placeholder="Filter by file name or rule" @bind="search" @bind:event="oninput" @bind:after="Reset" aria-label="Filter by file name or rule" />
+            @if (all.Any(d => d.RenameTo != null))
+            {
+                <label class="inline"><input type="checkbox" @bind="alsoRename" /> Also rename files from their title or comment tag</label>
+            }
+        </div>
+
+        var visible = Visible().ToList();
+        <div class="fo-list">
+            <div class="fo-row head"><span></span><span></span><span>File, and why it matches</span><span>Goes to</span></div>
+            @foreach (var d in visible.Take(shown))
+            {
+                <div class="fo-row @(d.Done ? "is-done" : "")" @key="d">
+                    <Thumb Decision="d" Index="IndexOf(d)" />
+                    <button class="icon" @onclick="() => Play(d)" title="Open it" aria-label="Open @d.FileName">@PlayIcon</button>
+                    <div class="info">
+                        <div class="name">@d.FileName</div>
+                        <div class="why"><span class="chip">@Source(d)</span> <span class="muted">@d.Trigger</span></div>
+                        @if (d.RenameTo != null) { <div class="rename">@d.RenameSource tag: @d.RenameTo</div> }
+                    </div>
+                    <div class="goes">
+                        <select value="@d.Choice" @onchange="e => Choose(d, e.Value!.ToString()!)" disabled="@d.Done" aria-label="Where @d.FileName goes">
+                            <option value="@FileDecision.LeaveHere">@FileDecision.LeaveHere</option>
+                            @foreach (var c in App.CategoryNames()) { <option value="@c">@c</option> }
+                        </select>
+                        @if (d.Done) { <span class="chip done">Moved</span> }
+                    </div>
+                </div>
+            }
+        </div>
+        @if (visible.Count > shown)
+        {
+            <div class="more"><button @onclick="() => shown += 200">Show @Math.Min(200, visible.Count - shown) more</button></div>
+        }
+
+        <div class="actionbar">
+            <div class="inner">
+                <div class="count num">
+                    @Fmt.Plural(pending.Count, "file", "files") will move to @Fmt.Plural(pending.Select(d => d.EffectiveCategory!).Distinct(StringComparer.OrdinalIgnoreCase).Count(), "folder", "folders")
+                    <small>@Detail()</small>
+                </div>
+                <div class="inline" style="margin-left:auto">
+                    <button class="big" @onclick="CreateScripts" title="Writes move_files (and rename_files, unmatched_files.txt) in the scanned folder, to run yourself">Create scripts</button>
+                    <button class="primary big" disabled="@(pending.Count == 0)" @onclick="() => confirming = true">Move files now</button>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@if (confirming)
+{
+    <div class="dialog-backdrop" @onclick="() => confirming = false">
+        <div class="dialog" role="alertdialog" aria-modal="true" aria-labelledby="move-confirm" @onclick:stopPropagation="true">
+            <h2 id="move-confirm">Move @Fmt.Plural(pending.Count, "file", "files")?</h2>
+            <p>The files go into @Fmt.Plural(pending.Select(d => d.EffectiveCategory!).Distinct(StringComparer.OrdinalIgnoreCase).Count(), "folder", "folders") inside @App.Result?.Folder. Nothing is overwritten: a file whose target exists already stays where it is.@(alsoRename && pending.Any(d => d.RenameTo != null) ? " Files with a title or comment tag also get that as their name." : "")</p>
+            <div class="buttons">
+                <button @onclick="() => confirming = false">Cancel</button>
+                <button class="primary" @onclick="Move">Move files</button>
+            </div>
+        </div>
+    </div>
+}
+
+@if (playing != null)
+{
+    <div class="dialog-backdrop" @onclick="() => playing = null">
+        <div class="dialog player" role="dialog" aria-modal="true" @onclick:stopPropagation="true">
+            <div class="player-head"><h2>@playing.FileName</h2><button @onclick="() => playing = null">Close</button></div>
+            <video src="media/@IndexOf(playing)" controls autoplay preload="metadata" style="width:100%;max-height:70vh;background:#000"></video>
+            <p class="muted">Browsers play mp4, webm and mov, not every format. If nothing shows, <a href="media/@IndexOf(playing)" target="_blank" rel="noopener">open it in a new tab</a> to download it.</p>
+        </div>
+    </div>
+}
+
+@if (toast != null)
+{
+    <div class="toast" role="status">@toast</div>
+}
+
+@code {
+    private List<FileDecision> all = new();
+    private Dictionary<FileDecision, int> index = new();
+    private string filter = "", search = "";
+    private bool alsoRename, confirming;
+    private int shown = 200;
+    private string? scriptsText, toast;
+    private FileDecision? playing;
+    private CancellationTokenSource? toastTimer;
+    private List<FileDecision> pending = new();
+
+    public static readonly RenderFragment PlayIcon =
+        @<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 1.5v11l9-5.5z" fill="currentColor" /></svg>;
+
+    protected override void OnInitialized()
+    {
+        Load();
+        App.ResultChanged += OnResult;
+    }
+
+    private void OnResult() => InvokeAsync(() => { Load(); StateHasChanged(); });
+
+    // The files that go somewhere, by the rules or by the user's choice
+    private void Load()
+    {
+        var decisions = App.Result?.Decisions ?? new List<FileDecision>();
+        index = new Dictionary<FileDecision, int>();
+        for (int i = 0; i < decisions.Count; i++) index[decisions[i]] = i;
+        all = decisions.Where(d => d.Category != null || d.OverrideCategory != null)
+            .OrderBy(d => d.Category ?? d.OverrideCategory, StringComparer.OrdinalIgnoreCase).ThenBy(d => d.FileName, StringComparer.OrdinalIgnoreCase).ToList();
+        UpdatePending();
+    }
+
+    private void UpdatePending() => pending = App.Pending.ToList();
+
+    private int IndexOf(FileDecision d) => index.TryGetValue(d, out var i) ? i : -1;
+
+    private IEnumerable<FileDecision> Visible()
+    {
+        var query = all.AsEnumerable();
+        if (filter.Length > 0) query = query.Where(d => (d.Category ?? d.OverrideCategory) == filter || d.EffectiveCategory == filter);
+        if (!string.IsNullOrWhiteSpace(search))
+            query = query.Where(d => d.FileName.Contains(search.Trim(), StringComparison.OrdinalIgnoreCase) || d.Trigger.Contains(search.Trim(), StringComparison.OrdinalIgnoreCase));
+        return query;
+    }
+
+    private void Reset() => shown = 200;
+
+    private static string Source(FileDecision d) => d.Source switch
+    {
+        MatchSource.Filename => "File name",
+        MatchSource.Title => "Title tag",
+        MatchSource.Comment => "Comment tag",
+        MatchSource.Ocr => "Text in the video",
+        MatchSource.Corrupt => "Can't be read",
+        _ => d.OverrideCategory != null ? "Your choice" : "",
+    };
+
+    private string Detail()
+    {
+        int left = all.Count(d => !d.Done && d.EffectiveCategory == null), moved = all.Count(d => d.Done);
+        var parts = new List<string>();
+        if (left > 0) parts.Add($"{left:N0} left where they are");
+        if (moved > 0) parts.Add($"{moved:N0} already moved");
+        return string.Join(", ", parts);
+    }
+
+    private void Choose(FileDecision d, string choice)
+    {
+        d.Choose(choice);
+        UpdatePending();
+        App.NotifyDecisionsEdited();
+    }
+
+    private void Play(FileDecision d) => playing = d;
+
+    private void Move()
+    {
+        confirming = false;
+        var report = App.MoveNow(alsoRename);
+        string text = report.Summary;
+        if (report.Messages.Count > 0) text += " " + string.Join(" ", report.Messages.Take(2)) + (report.Messages.Count > 2 ? $" (and {report.Messages.Count - 2} more)" : "");
+        ShowToast(text, report.Messages.Count > 0 ? 12000 : 6000);
+    }
+
+    private void CreateScripts()
+    {
+        var report = App.WriteScripts();
+        if (!report.Any && report.UnmatchedReport == null) { ShowToast("There is nothing to write a script for."); return; }
+        var parts = new List<string>();
+        if (report.MoveScript != null) parts.Add($"{System.IO.Path.GetFileName(report.MoveScript)} ({Fmt.Plural(report.Moves, "move", "moves")})");
+        if (report.RenameScript != null) parts.Add($"{System.IO.Path.GetFileName(report.RenameScript)} ({Fmt.Plural(report.Renames, "rename", "renames")})");
+        if (report.UnmatchedReport != null) parts.Add(System.IO.Path.GetFileName(report.UnmatchedReport));
+        string how = report.MoveScript == null ? "" : OperatingSystem.IsWindows()
+            ? $" Run it on the computer with the files: powershell -ExecutionPolicy Bypass -File \"{report.MoveScript}\""
+            : $" Run it on the computer with the files: sh \"{report.MoveScript}\"";
+        scriptsText = "Wrote " + string.Join(", ", parts) + " in " + App.Result!.Folder + "." + how;
+    }
+
+    private void ShowToast(string text, int ms = 5000)
+    {
+        toast = text;
+        toastTimer?.Cancel();
+        toastTimer = new CancellationTokenSource();
+        var token = toastTimer.Token;
+        _ = Task.Delay(ms, token).ContinueWith(t => { if (t.IsCanceled) return; toast = null; InvokeAsync(StateHasChanged); });
+    }
+
+    public void Dispose()
+    {
+        App.ResultChanged -= OnResult;
+        toastTimer?.Cancel();
+    }
+}

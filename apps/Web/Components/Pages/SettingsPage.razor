@@ -1,0 +1,97 @@
+@page "/settings"
+@inject AppController App
+
+<PageTitle>Settings</PageTitle>
+
+<div class="page">
+    <div class="page-head">
+        <div>
+            <h1>Settings</h1>
+            <p>Which files get the deep scan, and where the program keeps its files.</p>
+        </div>
+        <div class="inline">
+            <button disabled="@(!edited)" @onclick="Load">Undo changes</button>
+            <button class="primary big" disabled="@(!edited)" @onclick="Save">Save</button>
+        </div>
+    </div>
+
+    @if (message != null) { <div class="notice @(failed ? "warn" : "")" role="status"><p>@message</p></div> }
+
+    <section class="panel">
+        <h2>Videos to read</h2>
+        <p class="muted">Files of these types get the text in their frames read (OCR). Other files are sorted by name and tags only.</p>
+        <ul class="tags" aria-label="Video types">
+            @foreach (var e in extensions)
+            {
+                <li><label class="inline"><input type="checkbox" checked="@e.On" @onchange="x => { e.On = (bool)x.Value!; edited = true; }" /> @e.Name</label></li>
+            }
+        </ul>
+        <div class="inline">
+            <input type="text" placeholder=".ext" @bind="newExtension" aria-label="Another file type" />
+            <button @onclick="AddExtension">Add</button>
+        </div>
+    </section>
+
+    <section class="panel">
+        <h2>Reading speed</h2>
+        <label class="inline"><input type="checkbox" checked="@stopAtFirst" @onchange="x => { stopAtFirst = (bool)x.Value!; edited = true; }" /> Stop reading a video as soon as a frame matches a rule (faster)</label>
+    </section>
+
+    <section class="panel">
+        <h2>Files of the program</h2>
+        <p>Data folder: <code>@App.DataFolder</code></p>
+        <p class="muted">The rules (settings.json), the pictures of videos and the folder that was used last.</p>
+        <p>Models folder: <code>@App.ModelsFolder</code></p>
+        <p class="muted">@(modelsReady ? "The text recognition models are downloaded." : "The text recognition models (about 13 MB) are downloaded the first time a video is read.")</p>
+        <p class="muted">Scripts are written as @(OperatingSystem.IsWindows() ? "PowerShell scripts (.ps1)" : "shell scripts (.sh)") in the scanned folder.</p>
+    </section>
+</div>
+
+@code {
+    private sealed class Ext { public string Name = ""; public bool On; }
+    private readonly List<Ext> extensions = new();
+    private bool stopAtFirst = true, edited, failed, modelsReady;
+    private string newExtension = "";
+    private string? message;
+
+    protected override void OnInitialized() => Load();
+
+    private void Load()
+    {
+        var chosen = new HashSet<string>(App.Settings.Opt.VideoExtensions ?? Options.DefaultVideoExtensions, StringComparer.OrdinalIgnoreCase);
+        extensions.Clear();
+        foreach (var e in Options.DefaultVideoExtensions.Concat(chosen.Except(Options.DefaultVideoExtensions, StringComparer.OrdinalIgnoreCase)))
+            extensions.Add(new Ext { Name = e, On = chosen.Contains(e) });
+        stopAtFirst = App.Settings.Opt.StopOcrAtFirstMatch;
+        edited = false;
+        string models = App.ModelsFolder;
+        modelsReady = Directory.Exists(models) && Directory.GetFiles(models, "*.onnx").Length >= 2;
+    }
+
+    private void AddExtension()
+    {
+        string e = newExtension.Trim().ToLowerInvariant();
+        if (e.Length == 0) return;
+        if (!e.StartsWith('.')) e = "." + e;
+        failed = true;
+        if (e.Length < 2 || e.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0) { message = $"\"{e}\" is not a file type."; return; }
+        if (extensions.Any(x => x.Name.Equals(e, StringComparison.OrdinalIgnoreCase))) { message = $"{e} is in the list already."; return; }
+        failed = false; message = null;
+        extensions.Add(new Ext { Name = e, On = true });
+        newExtension = "";
+        edited = true;
+    }
+
+    private void Save()
+    {
+        var s = App.Settings.Clone();   // the rules stay as they are
+        var chosen = extensions.Where(x => x.On).Select(x => x.Name).ToArray();
+        bool isDefault = chosen.Length == Options.DefaultVideoExtensions.Length && chosen.All(c => Options.DefaultVideoExtensions.Contains(c, StringComparer.OrdinalIgnoreCase));
+        s.Opt.VideoExtensions = isDefault ? null : chosen;
+        s.Opt.StopOcrAtFirstMatch = stopAtFirst;
+        var problems = App.SaveSettings(s);
+        failed = problems.Count > 0;
+        message = failed ? problems[0] : "Saved.";
+        if (!failed) edited = false;
+    }
+}

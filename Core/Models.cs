@@ -102,6 +102,19 @@ public sealed class FileDecision
     /// <summary>Where it is now, once Done.</summary>
     public string? MovedTo { get; set; }
 
+    public const string LeaveHere = "(leave it here)";
+
+    /// <summary>What the file's folder choice shows: the category it goes to, or "(leave it here)".</summary>
+    [JsonIgnore] public string Choice => EffectiveCategory ?? LeaveHere;
+
+    /// <summary>The user picks a folder for the file, or "(leave it here)". Picking the rules' own category clears the override.</summary>
+    public void Choose(string choice)
+    {
+        if (choice == LeaveHere) { Skip = true; return; }
+        Skip = false;
+        OverrideCategory = string.Equals(choice, Category, StringComparison.OrdinalIgnoreCase) ? null : choice;
+    }
+
     [JsonIgnore] public bool IsMatched => Category != null;
     /// <summary>The category the file will go to: the user's choice, else the rules' (null: stays).</summary>
     [JsonIgnore] public string? EffectiveCategory => Skip ? null : (OverrideCategory ?? Category);

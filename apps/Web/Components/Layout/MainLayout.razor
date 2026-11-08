@@ -1,0 +1,62 @@
+@inherits LayoutComponentBase
+@implements IDisposable
+@inject AppController App
+
+<header class="topbar">
+    <div class="brand">
+        <img src="appicon-32.png" width="24" height="24" alt="" />
+        File Organizer
+    </div>
+    <nav class="tabs">
+        <NavLink href="scan">Scan @if (App.Engine.IsRunning) { <span class="live" title="Scanning"></span> }</NavLink>
+        <NavLink href="" Match="NavLinkMatch.All">Review @if (review > 0) { <span class="count num">@review.ToString("N0")</span> }</NavLink>
+        <NavLink href="unmatched">Unmatched @if (unmatched > 0) { <span class="count num warn">@unmatched.ToString("N0")</span> }</NavLink>
+        <NavLink href="rules">Rules</NavLink>
+        <NavLink href="settings">Settings</NavLink>
+    </nav>
+    <div class="datafolder" title="Data folder: @App.DataFolder">@App.DataFolder</div>
+</header>
+
+@Body
+
+<div id="blazor-error-ui" data-nosnippet>
+    Something went wrong. <a href="." class="reload">Reload the page</a>
+    <span class="dismiss">✕</span>
+</div>
+
+@code {
+    private int review, unmatched;
+    private bool wasRunning;
+
+    protected override void OnInitialized()
+    {
+        Count();
+        App.ResultChanged += OnChanged;
+        App.DecisionsEdited += OnChanged;
+        App.Engine.ProgressChanged += OnProgress;
+    }
+
+    // The numbers on the tabs: files that will move, and files nothing matched
+    private void Count()
+    {
+        review = App.Result?.Decisions.Count(d => !d.Done && d.EffectiveCategory != null) ?? 0;
+        unmatched = App.Result?.Decisions.Count(d => d.Category == null && d.OverrideCategory == null) ?? 0;
+    }
+
+    private void OnChanged() => InvokeAsync(() => { Count(); StateHasChanged(); });
+
+    // Only re-render the top bar when a scan starts or stops
+    private void OnProgress(OrganizeProgress p)
+    {
+        if (wasRunning == App.Engine.IsRunning) return;
+        wasRunning = App.Engine.IsRunning;
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        App.ResultChanged -= OnChanged;
+        App.DecisionsEdited -= OnChanged;
+        App.Engine.ProgressChanged -= OnProgress;
+    }
+}

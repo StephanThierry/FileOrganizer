@@ -41,6 +41,10 @@ public sealed class AppController : IDisposable
     public event Action? SettingsChanged;
     /// <summary>Raised when another folder was chosen.</summary>
     public event Action? TargetChanged;
+    /// <summary>Raised when a page changed what will happen to files (a folder choice): the counts in the top bar follow it.</summary>
+    public event Action? DecisionsEdited;
+
+    public void NotifyDecisionsEdited() => DecisionsEdited?.Invoke();
 
     private AppController(string dataFolder)
     {

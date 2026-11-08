@@ -1,0 +1,17 @@
+@* A video's picture (made on first request), or a file icon for other files. *@
+<div class="fo-thumb">
+    @if (Decision.IsVideo && Index >= 0)
+    {
+        <img loading="lazy" src="thumb/@Index" alt="" onerror="this.style.visibility='hidden'" />
+    }
+    else
+    {
+        <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z" fill="currentColor" /></svg>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public FileDecision Decision { get; set; } = default!;
+    /// <summary>The file's place in the result (the address of its picture and of the player).</summary>
+    [Parameter] public int Index { get; set; } = -1;
+}

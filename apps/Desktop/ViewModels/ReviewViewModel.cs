@@ -9,7 +9,7 @@ namespace FileOrganizer.Desktop.ViewModels;
 /// <summary>The files that will move: each with its category, why, and a choice to send it elsewhere or leave it.</summary>
 public partial class ReviewViewModel : ViewModelBase
 {
-    public const string LeaveHere = "(leave it here)";
+    public const string LeaveHere = FileDecision.LeaveHere;
     public const string AllCategories = "All categories";
 
     private readonly AppController app;
@@ -200,7 +200,7 @@ public partial class FileRow : ObservableObject
     public void Refresh()
     {
         settingChoice = true;
-        Choice = Decision.EffectiveCategory ?? ReviewViewModel.LeaveHere;
+        Choice = Decision.Choice;
         settingChoice = false;
         IsDone = Decision.Done;
         IsLeft = Decision.EffectiveCategory == null;
@@ -212,12 +212,7 @@ public partial class FileRow : ObservableObject
     partial void OnChoiceChanged(string value)
     {
         if (settingChoice || value == null) return;
-        if (value == ReviewViewModel.LeaveHere) { Decision.Skip = true; }
-        else
-        {
-            Decision.Skip = false;
-            Decision.OverrideCategory = string.Equals(value, Decision.Category, StringComparison.OrdinalIgnoreCase) ? null : value;
-        }
+        Decision.Choose(value);
         IsLeft = Decision.EffectiveCategory == null;
         OnPropertyChanged(nameof(EffectiveName));
         OnPropertyChanged(nameof(SourceText));
