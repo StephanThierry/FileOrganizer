@@ -65,8 +65,9 @@ public partial class ReviewViewModel : ViewModelBase
         var keep = new HashSet<FileDecision>(wanted);
         foreach (var gone in rows.Keys.Where(k => !keep.Contains(k)).ToList()) rows.Remove(gone);
         foreach (var d in wanted)
-            if (!rows.ContainsKey(d)) rows[d] = new FileRow(d, app, Choices, Play, UpdateSummary) { DeleteRequested = row => AskDeleteFile(app, row.Decision) };
+            if (!rows.ContainsKey(d)) rows[d] = new FileRow(d, app, Choices, Play, UpdateSummary) { DeleteRequested = row => AskDeleteFile(app, row.Decision), MoveRequested = MoveOne };
 
+        foreach (var row in rows.Values) row.Refresh();   // a file that was moved shows as moved
         var current = SelectedFilter;
         Filters.Clear();
         Filters.Add(AllCategories);
@@ -115,6 +116,15 @@ public partial class ReviewViewModel : ViewModelBase
             $"The files go into {Fmt.Plural(folders, "folder", "folders")} inside {app.Result!.Folder}. Nothing is overwritten: a file whose target exists already stays where it is."
             + (AlsoRename && pending.Any(d => d.RenameTo != null) ? " Files with a title or comment tag also get that as their name." : ""),
             "Move files", DoMove);
+    }
+
+    // The move icon of one row: moves just that file, at once (nothing is overwritten)
+    private void MoveOne(FileRow row)
+    {
+        var report = app.MoveOne(row.Decision, AlsoRename);
+        string text = report.Summary;
+        if (report.Messages.Count > 0) text += " " + string.Join(" ", report.Messages.Take(2));
+        ShowToast(text, report.Messages.Count > 0 ? 10000 : 5000);
     }
 
     private void DoMove()
@@ -191,6 +201,8 @@ public partial class FileRow : ObservableObject
     [ObservableProperty] private string choice = "";
     [ObservableProperty] private bool isDone;
     [ObservableProperty] private bool isLeft;
+    /// <summary>The file goes somewhere and has not been moved yet: the move icon works.</summary>
+    [ObservableProperty] private bool canMove;
 
     /// <summary>The category the file goes to now (empty: it stays).</summary>
     public string EffectiveName => Decision.EffectiveCategory ?? "";
@@ -213,6 +225,7 @@ public partial class FileRow : ObservableObject
         settingChoice = false;
         IsDone = Decision.Done;
         IsLeft = Decision.EffectiveCategory == null;
+        CanMove = !Decision.Done && Decision.EffectiveCategory != null;
         OnPropertyChanged(nameof(EffectiveName));
         OnPropertyChanged(nameof(SourceText));
     }
@@ -223,6 +236,7 @@ public partial class FileRow : ObservableObject
         if (settingChoice || value == null) return;
         Decision.Choose(value);
         IsLeft = Decision.EffectiveCategory == null;
+        CanMove = !Decision.Done && Decision.EffectiveCategory != null;
         OnPropertyChanged(nameof(EffectiveName));
         OnPropertyChanged(nameof(SourceText));
         changed();
@@ -232,5 +246,8 @@ public partial class FileRow : ObservableObject
 
     /// <summary>Set by the screen: asks before deleting this file.</summary>
     public Action<FileRow>? DeleteRequested { get; set; }
+    /// <summary>Set by the screen: moves this one file.</summary>
+    public Action<FileRow>? MoveRequested { get; set; }
+    [RelayCommand] private void Move() => MoveRequested?.Invoke(this);
     [RelayCommand] private void Delete() => DeleteRequested?.Invoke(this);
 }
