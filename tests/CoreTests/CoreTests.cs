@@ -567,6 +567,27 @@ public class AppControllerTests : IDisposable
     }
 
     [Fact]
+    public void AFolderPickedByHandKeepsTheFileUnmatchedUntilItIsMoved()
+    {
+        File.WriteAllText(Path.Combine(Files, "random.txt"), "x");
+        using var app = Open(Make.Rules(Make.Cat("Barry", true, ("Contains", "yyyy"))));
+        app.SetTargetFolder(Files);
+        Scan(app);
+        var d = app.Result!.Decisions.Single();
+        Assert.True(d.IsUnmatched);
+
+        d.Choose("Barry");                       // picked by hand: still listed as unmatched, and nothing has moved
+        Assert.True(d.IsUnmatched);
+        Assert.Equal("Barry", d.EffectiveCategory);
+        Assert.True(File.Exists(Path.Combine(Files, "random.txt")));
+        Assert.False(Directory.Exists(Path.Combine(Files, "Barry")));
+
+        app.MoveOne(d, false);                   // the move icon: now it moves, and leaves the list
+        Assert.False(d.IsUnmatched);
+        Assert.True(File.Exists(Path.Combine(Files, "Barry", "random.txt")));
+    }
+
+    [Fact]
     public void MovingOneFileLeavesTheOthers()
     {
         File.WriteAllText(Path.Combine(Files, "Show S01.txt"), "x");

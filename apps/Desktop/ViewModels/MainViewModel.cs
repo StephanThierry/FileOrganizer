@@ -39,7 +39,7 @@ public partial class MainViewModel : ObservableObject
     public void UpdateBadges()
     {
         int review = App.Result?.Decisions.Count(d => !d.Done && d.EffectiveCategory != null) ?? 0;
-        int unmatched = App.Result?.Decisions.Count(d => d.Category == null && d.OverrideCategory == null) ?? 0;
+        int unmatched = App.Result?.Decisions.Count(d => d.IsUnmatched) ?? 0;
         ReviewBadge = review > 999 ? "999+" : review.ToString(); HasReviewBadge = review > 0;
         UnmatchedBadge = unmatched > 999 ? "999+" : unmatched.ToString(); HasUnmatchedBadge = unmatched > 0;
     }

@@ -40,7 +40,7 @@
     private void Count()
     {
         review = App.Result?.Decisions.Count(d => !d.Done && d.EffectiveCategory != null) ?? 0;
-        unmatched = App.Result?.Decisions.Count(d => d.Category == null && d.OverrideCategory == null) ?? 0;
+        unmatched = App.Result?.Decisions.Count(d => d.IsUnmatched) ?? 0;
     }
 
     private void OnChanged() => InvokeAsync(() => { Count(); StateHasChanged(); });

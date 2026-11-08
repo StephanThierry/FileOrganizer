@@ -37,7 +37,7 @@ button.icon.del:hover:not(:disabled) { color: var(--grease-hover); background: v
 .player { width: min(900px, 100%); }
 .player-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 10px; }
 .player-head h2 { font-size: 1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.un-row { display: grid; grid-template-columns: 594px minmax(0, 1fr) 260px; gap: 12px; padding: 10px 14px; border-top: 1px solid var(--rule); align-items: start; }
+.un-row { display: grid; grid-template-columns: 594px minmax(0, 1fr) 340px; gap: 12px; padding: 10px 14px; border-top: 1px solid var(--rule); align-items: start; }
 .un-row .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 .cat-layout { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 20px; align-items: start; }
 .cat-list { background: var(--sheet); border: 1px solid var(--rule); border-radius: var(--radius-sheet); overflow: hidden; }
@@ -50,7 +50,7 @@ button.icon.del:hover:not(:disabled) { color: var(--grease-hover); background: v
 @media (max-width: 1500px) {
   .fo-row { grid-template-columns: 402px 40px minmax(0, 1fr) 260px; }
   .fo-thumbs .fo-thumb { width: 128px; height: 72px; }
-  .un-row { grid-template-columns: 402px minmax(0, 1fr) 220px; }
+  .un-row { grid-template-columns: 402px minmax(0, 1fr) 300px; }
 }
 @media (max-width: 800px) {
   .fo-row { grid-template-columns: 1fr; }

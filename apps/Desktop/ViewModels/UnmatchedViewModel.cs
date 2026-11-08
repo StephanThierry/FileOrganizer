@@ -64,11 +64,11 @@ public partial class UnmatchedViewModel : ViewModelBase
     {
         var result = app.Result;
         HasResult = result != null;
-        var wanted = result?.Decisions.Where(d => d.Category == null && d.OverrideCategory == null).ToList() ?? new();
+        var wanted = result?.Decisions.Where(d => d.IsUnmatched).ToList() ?? new();
         var keep = new HashSet<FileDecision>(wanted);
         foreach (var gone in rows.Keys.Where(k => !keep.Contains(k)).ToList()) rows.Remove(gone);
         foreach (var d in wanted)
-            if (!rows.ContainsKey(d)) rows[d] = new UnmatchedRow(d, app, Choices, p => Play(p), OnAssigned, OpenRule) { DeleteRequested = row => AskDeleteFile(app, row.Decision) };
+            if (!rows.ContainsKey(d)) rows[d] = new UnmatchedRow(d, app, Choices, p => Play(p), OnAssigned, OpenRule) { DeleteRequested = row => AskDeleteFile(app, row.Decision), MoveRequested = MoveOne };
 
         Rows.Clear();
         foreach (var r in wanted.Select(d => rows[d])) Rows.Add(r);
@@ -79,8 +79,17 @@ public partial class UnmatchedViewModel : ViewModelBase
         main.UpdateBadges();
     }
 
-    // A file was given a folder by hand: it leaves this list (and shows up in Review)
-    private void OnAssigned() => Dispatcher.UIThread.Post(() => { Reload(); });
+    // A folder was chosen by hand: the file stays in this list until its move icon is clicked (Review lists it as waiting to move)
+    private void OnAssigned() => Dispatcher.UIThread.Post(main.UpdateBadges);
+
+    // The move icon of one row: moves just that file now (nothing is overwritten); it then leaves this list
+    private void MoveOne(FileRow row)
+    {
+        var report = app.MoveOne(row.Decision, alsoRename: false);
+        string text = report.Summary;
+        if (report.Messages.Count > 0) text += " " + string.Join(" ", report.Messages.Take(2));
+        ShowToast(text, report.Messages.Count > 0 ? 10000 : 5000);
+    }
 
     // ---------- Make a rule ----------
 
