@@ -1,0 +1,25 @@
+namespace FileOrganizer;
+
+/// <summary>Formatting shared by the interfaces.</summary>
+public static class Fmt
+{
+    public static string Plural(int n, string one, string many) => $"{n:N0} {(n == 1 ? one : many)}";
+
+    public static string Time(TimeSpan t) =>
+        t.TotalHours >= 1 ? $"{(int)t.TotalHours}:{t.Minutes:00}:{t.Seconds:00}" : $"{t.Minutes}:{t.Seconds:00}";
+
+    /// <summary>"about 2 h 10 min", "about 4 min", "less than a minute".</summary>
+    public static string Approx(TimeSpan t)
+    {
+        if (t.TotalMinutes < 1) return "less than a minute";
+        if (t.TotalHours < 1) return $"about {Math.Ceiling(t.TotalMinutes)} min";
+        return $"about {(int)t.TotalHours} h {t.Minutes} min";
+    }
+
+    public static string Size(long bytes)
+    {
+        if (bytes >= 1L << 30) return $"{bytes / (double)(1L << 30):0.0} GB";
+        if (bytes >= 1L << 20) return $"{bytes / (double)(1L << 20):0} MB";
+        return $"{Math.Max(bytes, 0) / 1024.0:0} KB";
+    }
+}

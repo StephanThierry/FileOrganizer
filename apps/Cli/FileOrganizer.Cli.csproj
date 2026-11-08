@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The command line: FileOrganizer <folder>. Same engine and settings as the desktop and web apps. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>FileOrganizer</AssemblyName>
+    <RootNamespace>FileOrganizer.Cli</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../FileOrganizer.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- A settings.json in the repository folder is used by "dotnet run" (as it always was) -->
+    <None Include="../../settings.json" Link="settings.json" Condition="Exists('../../settings.json')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

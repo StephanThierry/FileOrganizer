@@ -10,6 +10,8 @@ using RapidOCRSharpOnnx.Configurations;
 using RapidOCRSharpOnnx.Providers;
 using RapidOCRSharpOnnx.Utils;
 
+namespace FileOrganizer;
+
 /// <summary>
 /// Cross-platform OCR for video frames using PaddleOCR's PP-OCRv5 models on ONNX Runtime.
 /// Replaces Windows.Media.Ocr so the program also runs on Linux and macOS.
