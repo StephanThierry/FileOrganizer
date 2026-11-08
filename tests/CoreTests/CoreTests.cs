@@ -559,6 +559,18 @@ public class AppControllerTests : IDisposable
     }
 
     [Fact]
+    public void AddingARuleExplainsAProblemInAnotherCategory()
+    {
+        // "Other Cat" already has an empty rule: nothing can be saved until that is fixed, and the message says so
+        using var app = Open(Make.Rules(Make.Cat("Other Cat", true, ("Contains", ""))));
+        string message = app.AddRule("MyCat", "Contains", "abc", out bool ok);
+        Assert.False(ok);
+        Assert.Contains("Other Cat: a rule is empty.", message);
+        Assert.Contains("Fix it under Rules", message);
+        Assert.DoesNotContain(app.Settings.Categories, c => c.Name == "MyCat");
+    }
+
+    [Fact]
     public void SavingBadRulesIsRefusedAndChangesNothing()
     {
         using var app = Open(Make.Rules(Make.Cat("A", false, ("Contains", "a"))));

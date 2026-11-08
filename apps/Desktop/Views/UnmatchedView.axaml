@@ -75,7 +75,6 @@
                       </DataTemplate>
                     </ItemsControl.ItemTemplate>
                   </ItemsControl>
-                  <Button Classes="link" Content="Make a rule from the file name" Command="{Binding MakeNameRule}" HorizontalAlignment="Left" FontSize="12"/>
                 </StackPanel>
                 <StackPanel Grid.Column="3" Spacing="4" VerticalAlignment="Top">
                   <TextBlock Text="Or send it to" Classes="muted small"/>

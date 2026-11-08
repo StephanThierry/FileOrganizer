@@ -164,7 +164,8 @@ public sealed class AppController : IDisposable
         existing.Rules.Add(rule);
 
         var problems = SaveSettings(settings);
-        if (problems.Count > 0) return problems[0];
+        if (problems.Count > 0)
+            return "The rule was not added, because the rules saved so far have a problem: " + string.Join(" ", problems) + " Fix it under Rules, then try again.";
         ok = true;
         return isNew ? $"Made the category {category} with the rule \"{value}\"." : $"Added the rule \"{value}\" to {existing.Name}.";
     }
