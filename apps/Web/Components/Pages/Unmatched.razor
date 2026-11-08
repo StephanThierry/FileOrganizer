@@ -75,7 +75,7 @@
             </div>
             <div class="rule-line">
                 <select @bind="ruleCategory" @bind:after="Preview" aria-label="Category">
-                    @foreach (var c in App.Settings.Categories) { <option value="@c.Name">@c.Name</option> }
+                    @foreach (var c in App.CategoryNames()) { <option value="@c">@c</option> }
                 </select>
                 <input type="text" placeholder="or a new category" @bind="newCategory" @bind:event="oninput" @bind:after="Preview" aria-label="New category" />
                 <span></span>
@@ -134,7 +134,7 @@
         ruleText = text;
         ruleType = "Contains";
         newCategory = "";
-        ruleCategory = App.Settings.Categories.FirstOrDefault()?.Name ?? "";
+        ruleCategory = App.CategoryNames().FirstOrDefault() ?? "";
         ruleOpen = true;
         Preview();
     }

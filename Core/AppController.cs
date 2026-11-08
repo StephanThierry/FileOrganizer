@@ -227,11 +227,13 @@ public sealed class AppController : IDisposable
         return path == null ? null : Thumbnails.EnsurePart(path, ThumbFolder, part);
     }
 
-    /// <summary>The names of the categories, in priority order (and the folder for unreadable videos).</summary>
+    /// <summary>The names of the categories for a list to choose from: alphabetical (and the folder for unreadable videos).</summary>
     public List<string> CategoryNames()
     {
-        var names = Settings.Categories.Select(c => c.Name).Where(n => n.Length > 0).ToList();
-        if (!names.Contains(OrganizeEngine.CorruptCategory)) names.Add(OrganizeEngine.CorruptCategory);
+        var names = Settings.Categories.Select(c => c.Name).Where(n => n.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        names.RemoveAll(n => n.Equals(OrganizeEngine.CorruptCategory, StringComparison.OrdinalIgnoreCase));
+        names.Sort(StringComparer.CurrentCultureIgnoreCase);
+        names.Add(OrganizeEngine.CorruptCategory);   // last: the folder for videos that can't be read
         return names;
     }
 }

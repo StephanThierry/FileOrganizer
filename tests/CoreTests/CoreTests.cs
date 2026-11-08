@@ -690,7 +690,7 @@ public class AppControllerTests : IDisposable
     [Fact]
     public void CategoryNamesIncludeTheFolderForUnreadableVideos()
     {
-        using var app = Open(Make.Rules(Make.Cat("A"), Make.Cat("B")));
-        Assert.Equal(new[] { "A", "B", "_CHECK_" }, app.CategoryNames());
+        using var app = Open(Make.Rules(Make.Cat("B"), Make.Cat("a"), Make.Cat("Zed"), Make.Cat("Ärlig")));
+        Assert.Equal(new[] { "a", "Ärlig", "B", "Zed", "_CHECK_" }, app.CategoryNames());
     }
 }
