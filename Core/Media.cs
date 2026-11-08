@@ -113,15 +113,7 @@ public sealed class OpenCvVideoOcr : IVideoOcr, IDisposable
             double duration = frameCount / fps;
             if (fps <= 0 || frameCount <= 0 || double.IsNaN(duration)) { result.IsCorrupt = true; return result; }
 
-            // The first 15 seconds, one frame a second, then 10 more spread over the rest
-            var times = new List<double>();
-            for (int i = 1; i <= 15; i++) { if (i <= duration) times.Add(i); }
-            if (duration > 15)
-            {
-                double chunk = (duration - 15) / 11;
-                for (int i = 1; i <= 10; i++) times.Add(15 + chunk * i);
-            }
-            var ordered = times.Distinct().OrderBy(x => x).ToList();
+            var ordered = SampleTimes(duration);
 
             int validFramesRead = 0, n = 0;
             foreach (double t in ordered)
@@ -158,6 +150,22 @@ public sealed class OpenCvVideoOcr : IVideoOcr, IDisposable
             result.IsCorrupt = true;
         }
         return result;
+    }
+
+    /// <summary>
+    /// The moments of a video to read: the very first frame (titles and logos often show only at the start), then one frame a second
+    /// for the first 15 seconds, then 10 more spread over the rest.
+    /// </summary>
+    public static List<double> SampleTimes(double duration)
+    {
+        var times = new List<double> { 0 };
+        for (int i = 1; i <= 15; i++) { if (i <= duration) times.Add(i); }
+        if (duration > 15)
+        {
+            double chunk = (duration - 15) / 11;
+            for (int i = 1; i <= 10; i++) times.Add(15 + chunk * i);
+        }
+        return times.Distinct().OrderBy(x => x).ToList();
     }
 
     // Lines that are mostly symbols are noise

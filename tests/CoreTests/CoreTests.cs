@@ -559,6 +559,17 @@ public class AppControllerTests : IDisposable
     }
 
     [Fact]
+    public void VideoSamplingStartsWithTheFirstFrame()
+    {
+        var times = OpenCvVideoOcr.SampleTimes(60);
+        Assert.Equal(0, times[0]);
+        Assert.Equal(1, times[1]);
+        Assert.Equal(26, times.Count);
+        Assert.Equal(new[] { 0.0 }, OpenCvVideoOcr.SampleTimes(0.4));   // a very short video: just the first frame
+        Assert.Equal(new[] { 0.0, 1.0, 2.0 }, OpenCvVideoOcr.SampleTimes(2.5));
+    }
+
+    [Fact]
     public void AddingARuleExplainsAProblemInAnotherCategory()
     {
         // "Other Cat" already has an empty rule: nothing can be saved until that is fixed, and the message says so
