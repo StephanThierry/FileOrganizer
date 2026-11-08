@@ -66,16 +66,17 @@
                         </div>
                     </div>
 
-                    @if (running && p.CurrentFile.Length > 0)
+                    @if (running)
                     {
-                        <div class="nowreading">
-                            <strong>@p.CurrentFile</strong><br />
-                            @(p.Stage switch { "Filename" => "Checking the file name", "Tags" => "Reading the title and comment tags", "Reading video" => "Reading text in the video", _ => "" })
-                            @if (p.Stage == "Reading video" && p.OcrFrames > 0)
-                            {
-                                <div class="bar frames" role="progressbar" aria-label="Frames of the video"><div style="width:@Width(p.OcrFrame / (double)p.OcrFrames)%"></div></div>
-                                <span>frame @p.OcrFrame of @p.OcrFrames</span>
-                            }
+                        @* Always the same height, so nothing below it jumps when the next file starts and the frame bar is not there for a moment *@
+                        var reading = p.Stage == "Reading video" && p.OcrFrames > 0;
+                        <div class="nowreading fixed">
+                            <div class="nr-file"><strong>@(p.CurrentFile.Length > 0 ? p.CurrentFile : " ")</strong></div>
+                            <div class="nr-stage">@(p.Stage switch { "Filename" => "Checking the file name", "Tags" => "Reading the title and comment tags", "Reading video" => "Reading text in the video", _ => " " })</div>
+                            <div class="nr-frames @(reading ? "" : "idle")" aria-hidden="@(!reading ? "true" : "false")">
+                                <div class="bar frames" role="progressbar" aria-label="Frames of the video"><div style="width:@Width(reading ? p.OcrFrame / (double)p.OcrFrames : 0)%"></div></div>
+                                <span>@(reading ? $"frame {p.OcrFrame} of {p.OcrFrames}" : " ")</span>
+                            </div>
                         </div>
                     }
 

@@ -63,3 +63,9 @@ button.icon.del:hover:not(:disabled) { color: var(--grease-hover); background: v
 .tags .forget { color: var(--muted); margin-left: 6px; font-size: .8rem; }
 .tags .forget:hover { color: var(--grease); text-decoration: none; }
 .scan-grid aside p { overflow-wrap: anywhere; }
+/* The file being read: a fixed height whatever the stage */
+.nowreading.fixed { word-break: normal; min-height: 0; }
+.nowreading.fixed .nr-file { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nowreading.fixed .nr-stage, .nowreading.fixed .nr-frames span { min-height: 1.4em; display: block; }
+.nowreading.fixed .nr-frames.idle { visibility: hidden; }
+.nowreading.fixed .nr-frames .bar { margin: 4px 0; }

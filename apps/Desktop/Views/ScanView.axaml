@@ -8,6 +8,9 @@
   <UserControl.Styles>
     <Style Selector="ProgressBar.files"><Setter Property="Foreground" Value="{DynamicResource Accent}"/></Style>
     <Style Selector="ProgressBar.frames"><Setter Property="Foreground" Value="{DynamicResource Keep}"/></Style>
+    <!-- Invisible but still taking its space, so the screen does not jump when a file has no frame bar -->
+    <Style Selector="StackPanel.reserve"><Setter Property="Opacity" Value="1"/></Style>
+    <Style Selector="StackPanel.reserve.idle"><Setter Property="Opacity" Value="0"/></Style>
     <!-- A picture that plays its video when clicked, with a small play badge at the bottom right -->
     <Style Selector="Button.thumbbtn"><Setter Property="Padding" Value="0"/><Setter Property="BorderThickness" Value="0"/><Setter Property="CornerRadius" Value="3"/>
       <Setter Property="Background" Value="{DynamicResource Frame}"/><Setter Property="Cursor" Value="Hand"/><Setter Property="ClipToBounds" Value="True"/>
@@ -85,11 +88,11 @@
 
                 <!-- The file being looked at -->
                 <StackPanel Spacing="6" IsVisible="{Binding IsRunning}">
-                  <TextBlock Text="{Binding CurrentFile}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
-                  <TextBlock Classes="muted small" Text="{Binding StageText}"/>
-                  <StackPanel Spacing="4" IsVisible="{Binding ShowFrames}">
+                  <TextBlock Text="{Binding CurrentFile}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" MinHeight="22"/>
+                  <TextBlock Classes="muted small" Text="{Binding StageText}" MinHeight="18"/>
+                  <StackPanel Classes="reserve" Classes.idle="{Binding !ShowFrames}" Spacing="4" MinHeight="32">
                     <ProgressBar Classes="frames" Value="{Binding FramePercent}" Maximum="100" Height="8" CornerRadius="4"/>
-                    <TextBlock Classes="muted small" Text="{Binding FrameText}"/>
+                    <TextBlock Classes="muted small" Text="{Binding FrameText}" MinHeight="18"/>
                   </StackPanel>
                 </StackPanel>
 
