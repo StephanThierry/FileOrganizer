@@ -1,0 +1,223 @@
+@page "/scan"
+@implements IDisposable
+@inject AppController App
+@inject NavigationManager Nav
+
+<PageTitle>Scan</PageTitle>
+
+<div class="page">
+    <div class="page-head">
+        <div>
+            <h1>Scan</h1>
+            <p>Looks at every file in a folder and decides where it belongs. Nothing is moved until you say so.</p>
+        </div>
+        @* The final report arrives just before the engine clears IsRunning: a finished scan is not running *@
+        @if (App.Engine.IsRunning && p.Phase is OrganizePhase.Listing or OrganizePhase.Scanning)
+        {
+            <button class="big" @onclick="Stop" disabled="@stopping">@(stopping ? "Stopping..." : "Stop scan")</button>
+        }
+        else
+        {
+            <button class="primary big" @onclick="Start">@(p.Phase == OrganizePhase.Idle ? "Start scan" : "Run new scan")</button>
+        }
+    </div>
+
+    <div class="scan-grid">
+        <div>
+            <section class="panel">
+                <h2>Folder to organize</h2>
+                <div class="folder-line">
+                    <input type="text" @bind="folder" @bind:event="oninput" placeholder="The folder with the files, on the computer running File Organizer" disabled="@running" aria-label="Folder to organize" />
+                    <button @onclick="() => picking = true" disabled="@running">Browse...</button>
+                </div>
+                @if (App.RecentFolders.Count > 0 && !running)
+                {
+                    <ul class="tags" aria-label="Folders used before">
+                        @foreach (var f in App.RecentFolders.ToList())
+                        {
+                            <li title="@f">
+                                <button class="link" @onclick="() => Use(f)">@f</button>
+                                <button class="link forget" @onclick="() => Forget(f)" title="Remove from this list" aria-label="Remove @f from this list">✕</button>
+                            </li>
+                        }
+                    </ul>
+                }
+                @if (error != null) { <div class="notice warn"><p>@error</p></div> }
+            </section>
+
+            <section class="panel" aria-live="polite">
+                @if (p.Phase == OrganizePhase.Idle)
+                {
+                    <p class="muted">No scan yet. For each file the program checks, in this order: 1) the file name, 2) the title and comment tags, 3) for videos, the text in about 25 frames (OCR). The first rule that matches decides. Videos that were read before are not read again, so a second scan is much faster.</p>
+                }
+                else
+                {
+                    <div class="phase active">
+                        <div class="phase-head">
+                            <span class="phase-name">Files</span>
+                            <span class="phase-pct num">@((int)Math.Floor(p.Fraction * 100))%</span>
+                        </div>
+                        <div class="bar @(p.Phase == OrganizePhase.Done ? "done" : "")" role="progressbar" aria-label="Files" aria-valuemin="0" aria-valuemax="100" aria-valuenow="@((int)Math.Floor(p.Fraction * 100))">
+                            <div style="width:@Width(p.Fraction)%"></div>
+                        </div>
+                        <div class="phase-detail">
+                            <span>@(p.FilesTotal == 0 ? "Listing the files..." : $"{p.FilesDone:N0} of {p.FilesTotal:N0} files")</span>
+                            <span class="muted">@(running && p.Remaining is TimeSpan r ? Fmt.Approx(r) + " left" : "")</span>
+                        </div>
+                    </div>
+
+                    @if (running)
+                    {
+                        @* Always the same height, so nothing below it jumps when the next file starts and the frame bar is not there for a moment *@
+                        var reading = p.Stage == "Reading video" && p.OcrFrames > 0;
+                        <div class="nowreading fixed">
+                            <div class="nr-file"><strong>@(p.CurrentFile.Length > 0 ? p.CurrentFile : " ")</strong></div>
+                            <div class="nr-stage">@(p.Stage switch { "Filename" => "Checking the file name", "Tags" => "Reading the title and comment tags", "Reading video" => "Reading text in the video", _ => " " })</div>
+                            <div class="nr-frames @(reading ? "" : "idle")" aria-hidden="@(!reading ? "true" : "false")">
+                                <div class="bar frames" role="progressbar" aria-label="Frames of the video"><div style="width:@Width(reading ? p.OcrFrame / (double)p.OcrFrames : 0)%"></div></div>
+                                <span>@(reading ? $"frame {p.OcrFrame} of {p.OcrFrames}" : " ")</span>
+                            </div>
+                        </div>
+                    }
+
+                    <dl class="stats">
+                        <div><dt>Matched</dt><dd>@p.Matched.ToString("N0")</dd></div>
+                        <div><dt>Unmatched</dt><dd>@p.Unmatched.ToString("N0")</dd></div>
+                        <div><dt>Videos that can't be read</dt><dd>@p.Corrupt.ToString("N0")</dd></div>
+                        <div><dt>Videos read now</dt><dd>@p.OcrDone.ToString("N0")</dd></div>
+                        <div><dt>Known from before</dt><dd>@p.CacheHits.ToString("N0")</dd></div>
+                        <div><dt>Time so far</dt><dd>@Fmt.Time(p.Elapsed)</dd></div>
+                    </dl>
+
+                    @if (p.RecentLines.Count > 0)
+                    {
+                        <div class="ocrlines" aria-label="Text found in the video"><div class="muted small">Text found in the video</div><pre class="command">@string.Join("\n", p.RecentLines)</pre></div>
+                    }
+
+                    @if (thumbs.Count > 0)
+                    {
+                        <div class="recent" aria-label="Pictures of the latest videos read">
+                            @foreach (var t in thumbs)
+                            {
+                                <button type="button" class="thumbbtn" @onclick="() => playing = t" title="Play this video" aria-label="Play @t.Name">
+                                    <img src="@t.Src" alt="" />
+                                    <span class="playbadge" aria-hidden="true"><svg width="10" height="11" viewBox="0 0 10 11"><path d="M0 0v11l10-5.5z" fill="currentColor" /></svg></span>
+                                </button>
+                            }
+                        </div>
+                    }
+
+                    @if (p.Phase == OrganizePhase.Done)
+                    {
+                        <div class="notice">
+                            <p><strong>@p.Message</strong></p>
+                            <p style="margin-top:10px">
+                                <button class="primary" @onclick='() => Nav.NavigateTo("")'>Review the moves</button>
+                                <button @onclick='() => Nav.NavigateTo("unmatched")'>Look at the unmatched files</button>
+                            </p>
+                        </div>
+                    }
+                    else if (p.Phase == OrganizePhase.Cancelled)
+                    {
+                        <div class="notice warn"><p>@p.Message</p><p style="margin-top:10px"><button @onclick='() => Nav.NavigateTo("")'>Review what was found</button></p></div>
+                    }
+                    else if (p.Phase == OrganizePhase.Failed)
+                    {
+                        <div class="notice warn"><p><strong>The scan stopped with an error:</strong> @p.Message</p></div>
+                    }
+                }
+            </section>
+        </div>
+
+        <aside>
+            <section class="panel">
+                <h2>Last scan</h2>
+                @if (App.Result is { } last)
+                {
+                    <p>@Fmt.Ago(last.FinishedUtc): @Fmt.Plural(last.Decisions.Count, "file", "files") in @last.Folder</p>
+                    <p class="muted" style="margin-top:6px">@last.Matched.Count().ToString("N0") matched, @last.Unmatched.Count().ToString("N0") unmatched.</p>
+                }
+                else
+                {
+                    <p class="muted">Nothing has been scanned yet. A scan only reads the files: nothing is moved until you say so.</p>
+                }
+            </section>
+        </aside>
+    </div>
+</div>
+
+<PlayerDialog Src="@(playing == null ? null : "scanmedia?name=" + Uri.EscapeDataString(playing.Relative))" Title="@(playing?.Name ?? "")" OnClose="() => playing = null" />
+<FolderPicker @bind-Open="picking" Start="@folder" OnChosen="Use" />
+
+@code {
+    private OrganizeProgress p = new();
+    private string folder = "";
+    private string? error;
+    private bool stopping, picking, scheduled;
+    private sealed record Thumb(string Src, string Relative, string Name);
+    private readonly List<Thumb> thumbs = new();
+    private Thumb? playing;
+    private string? lastThumb;
+
+    private bool running => App.Engine.IsRunning && p.Phase is OrganizePhase.Listing or OrganizePhase.Scanning;
+
+    protected override void OnInitialized()
+    {
+        p = App.Engine.Current;
+        folder = App.TargetFolder;
+        App.Engine.ProgressChanged += OnProgress;
+        App.ResultChanged += OnResult;
+    }
+
+    // Progress comes several times a second (every frame of a video): draw at most about 6 times a second
+    private void OnProgress(OrganizeProgress progress)
+    {
+        p = progress;
+        if (progress.LastThumbnail is { } t && t != lastThumb)
+        {
+            lastThumb = t;
+            // A scan's result is not published until it ends, so the picture is asked for by its (hash) file name
+            if (progress.LastThumbnailVideo is { } video)
+                thumbs.Insert(0, new Thumb("thumbfile/" + System.IO.Path.GetFileName(t), System.IO.Path.GetRelativePath(progress.Folder, video), System.IO.Path.GetFileName(video)));
+            while (thumbs.Count > 8) thumbs.RemoveAt(thumbs.Count - 1);
+        }
+        if (progress.Phase is OrganizePhase.Done or OrganizePhase.Cancelled or OrganizePhase.Failed) stopping = false;
+        if (scheduled && progress.Phase is OrganizePhase.Scanning or OrganizePhase.Listing) return;
+        scheduled = true;
+        _ = InvokeAsync(async () => { await Task.Delay(150); scheduled = false; StateHasChanged(); });
+    }
+
+    private void OnResult() => InvokeAsync(StateHasChanged);
+
+    private void Use(string path)
+    {
+        folder = path;
+        error = App.SetTargetFolder(folder);
+        StateHasChanged();
+    }
+
+    private void Forget(string path) => App.ForgetFolder(path);
+
+    private void Start()
+    {
+        error = App.SetTargetFolder(folder) ?? App.StartScan();
+        if (error != null) return;
+        thumbs.Clear();
+        lastThumb = null;
+        stopping = false;
+    }
+
+    private void Stop()
+    {
+        stopping = true;
+        App.StopScan();
+    }
+
+    private static string Width(double fraction) => (Math.Clamp(fraction, 0, 1) * 100).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture);
+
+    public void Dispose()
+    {
+        App.Engine.ProgressChanged -= OnProgress;
+        App.ResultChanged -= OnResult;
+    }
+}

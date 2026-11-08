@@ -1,0 +1,122 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:FileOrganizer.Desktop.ViewModels"
+             x:Class="FileOrganizer.Desktop.Views.RulesView"
+             x:DataType="vm:RulesViewModel">
+  <UserControl.Styles>
+    <Style Selector="TextBlock.bad"><Setter Property="Foreground" Value="{DynamicResource Grease}"/></Style>
+    <Style Selector="TextBlock.ok"><Setter Property="Foreground" Value="{DynamicResource Keep}"/></Style>
+    <Style Selector="ListBox.cats ListBoxItem"><Setter Property="Padding" Value="12,8"/><Setter Property="CornerRadius" Value="8"/></Style>
+  </UserControl.Styles>
+
+  <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="12,16,12,0">
+    <StackPanel Grid.Row="0" Margin="0,0,0,12">
+      <TextBlock Classes="h1" Text="Rules"/>
+      <TextBlock Classes="muted" TextWrapping="Wrap" Margin="0,4,0,0"
+                 Text="A category is a folder. A file goes to the first category in the list that matches: its name, a file name, a tag, or text in the video. Put the most specific categories first."/>
+    </StackPanel>
+
+    <StackPanel Grid.Row="1" Spacing="10" Margin="0,0,0,12">
+      <Border IsVisible="{Binding HasSettingsError}" Background="{DynamicResource GreaseWash}" CornerRadius="8" Padding="14,10">
+        <TextBlock Text="{Binding SettingsError}" TextWrapping="Wrap"/>
+      </Border>
+      <!-- Which rule wins for a text? -->
+      <Border Classes="panel" Padding="16,12">
+        <StackPanel Spacing="6">
+          <TextBlock Text="Try some text" FontWeight="SemiBold"/>
+          <TextBox Text="{Binding TryText}" PlaceholderText="A file name or some text from a video, to see which category it would go to (with your unsaved changes)"/>
+          <TextBlock Text="{Binding TryResult}" TextWrapping="Wrap" IsVisible="{Binding TryResult, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                     Classes.ok="{Binding TryMatches}"/>
+        </StackPanel>
+      </Border>
+    </StackPanel>
+
+    <Border Grid.Row="2" Classes="panel" Padding="40" VerticalAlignment="Top" IsVisible="{Binding !HasCategories}">
+      <StackPanel HorizontalAlignment="Center" Spacing="10" MaxWidth="560">
+        <TextBlock Classes="h2" Text="No categories yet" HorizontalAlignment="Center"/>
+        <TextBlock Classes="muted" TextWrapping="Wrap" TextAlignment="Center"
+                   Text="Make a category for each kind of file, for example Tutorials or a series. Add rules that say which files belong in it. You can also scan first and make rules from the unmatched files."/>
+        <Button Classes="primary" Content="Add the first category" Command="{Binding AddCategoryCommand}" HorizontalAlignment="Center"/>
+      </StackPanel>
+    </Border>
+
+    <Grid Grid.Row="2" ColumnDefinitions="320,*" ColumnSpacing="16" IsVisible="{Binding HasCategories}">
+      <!-- The categories, in priority order -->
+      <Border Classes="panel" Padding="12">
+        <DockPanel>
+          <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="6" Margin="0,0,0,10">
+            <Button Classes="small" Content="Add" Command="{Binding AddCategoryCommand}"/>
+            <Button Classes="small" Content="Up" Command="{Binding MoveUpCommand}" ToolTip.Tip="Higher in the list: checked earlier"/>
+            <Button Classes="small" Content="Down" Command="{Binding MoveDownCommand}" ToolTip.Tip="Lower in the list: checked later"/>
+            <Button Classes="small dangerOutline" Content="Delete" Command="{Binding DeleteCategoryCommand}"/>
+          </StackPanel>
+          <ListBox Classes="cats" ItemsSource="{Binding Categories}" SelectedItem="{Binding Selected}" Background="Transparent">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:CategoryItem">
+                <StackPanel Spacing="1">
+                  <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                  <TextBlock Text="{Binding FilesText}" Classes="muted small"/>
+                </StackPanel>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </DockPanel>
+      </Border>
+
+      <!-- The selected category -->
+      <ScrollViewer Grid.Column="1" Classes="gutter" IsVisible="{Binding HasSelected}">
+        <Border Classes="panel" DataContext="{Binding Selected}" x:DataType="vm:CategoryItem">
+          <StackPanel Spacing="16">
+            <StackPanel Spacing="4">
+              <TextBlock Text="Folder name" FontWeight="SemiBold"/>
+              <TextBox Text="{Binding Name}"/>
+              <CheckBox IsChecked="{Binding IgnoreName}" Content="Do not use the name itself as a rule" Margin="0,4,0,0"/>
+              <TextBlock Classes="muted small" TextWrapping="Wrap"
+                         Text="Normally a file also matches when the category's name is found in it. Switch this on for a general word (like Barry) that must only match through its rules."/>
+            </StackPanel>
+            <StackPanel Spacing="8">
+              <TextBlock Text="Rules" FontWeight="SemiBold"/>
+              <ItemsControl ItemsSource="{Binding Rules}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:RuleItem">
+                    <StackPanel Spacing="2" Margin="0,0,0,8">
+                      <Grid ColumnDefinitions="130,*,Auto" ColumnSpacing="8">
+                        <ComboBox ItemsSource="{Binding Types}" SelectedItem="{Binding Type}" HorizontalAlignment="Stretch"/>
+                        <TextBox Grid.Column="1" Text="{Binding Value}" PlaceholderText="Text, or a regular expression"/>
+                        <Button Grid.Column="2" Content="Remove" Command="{Binding RemoveCommand}" Classes="small dangerOutline" VerticalAlignment="Center"/>
+                      </Grid>
+                      <TextBlock Text="{Binding Error}" IsVisible="{Binding HasError}" Classes="bad small"/>
+                    </StackPanel>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <Button Content="Add a rule" HorizontalAlignment="Left" Command="{Binding AddRuleCommand}"/>
+              <TextBlock Classes="muted small" TextWrapping="Wrap"
+                         Text="Contains: the text anywhere (capitals don't matter). Regex: a pattern, e.g. ^Barry.*\.mp4$ or S\d\dE\d\d."/>
+            </StackPanel>
+          </StackPanel>
+        </Border>
+      </ScrollViewer>
+    </Grid>
+
+    <Border Grid.Row="3" Background="{DynamicResource Sheet}" BorderBrush="{DynamicResource Rule}" BorderThickness="0,1,0,0" Padding="16,12" Margin="-12,12,-12,0" IsVisible="{Binding HasCategories}">
+      <StackPanel Spacing="8">
+        <TextBlock Text="{Binding Problems}" TextWrapping="Wrap" Classes="bad" IsVisible="{Binding HasProblems}"/>
+        <DockPanel>
+          <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="10">
+            <Button Content="Undo the changes" Command="{Binding RevertCommand}" IsEnabled="{Binding IsEdited}"/>
+            <Button Classes="primary" Content="Save the rules" Command="{Binding SaveCommand}" IsEnabled="{Binding IsEdited}" FontSize="15" Padding="18,8"/>
+          </StackPanel>
+          <TextBlock VerticalAlignment="Center" Text="You have changes that are not saved yet." IsVisible="{Binding IsEdited}"/>
+          <TextBlock VerticalAlignment="Center" Classes="muted" Text="Saving also sorts the files of the last scan again with the new rules." IsVisible="{Binding !IsEdited}"/>
+        </DockPanel>
+      </StackPanel>
+    </Border>
+
+    <Border Grid.Row="2" Grid.RowSpan="2" IsVisible="{Binding Toast, Converter={x:Static ObjectConverters.IsNotNull}}"
+            Background="{DynamicResource Ink}" CornerRadius="4" Padding="14,10" Margin="0,0,0,90"
+            HorizontalAlignment="Center" VerticalAlignment="Bottom" MaxWidth="760">
+      <TextBlock Text="{Binding Toast}" Foreground="{DynamicResource Sheet}" TextWrapping="Wrap"/>
+    </Border>
+  </Grid>
+</UserControl>

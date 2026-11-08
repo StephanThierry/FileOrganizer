@@ -1,0 +1,173 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:FileOrganizer.Desktop.ViewModels"
+             xmlns:img="using:Avalonia.Media.Imaging"
+             xmlns:sys="using:System"
+             x:Class="FileOrganizer.Desktop.Views.ScanView"
+             x:DataType="vm:ScanViewModel">
+  <UserControl.Styles>
+    <Style Selector="ProgressBar.files"><Setter Property="Foreground" Value="{DynamicResource Accent}"/></Style>
+    <Style Selector="ProgressBar.frames"><Setter Property="Foreground" Value="{DynamicResource Keep}"/></Style>
+    <!-- Invisible but still taking its space, so the screen does not jump when a file has no frame bar -->
+    <Style Selector="StackPanel.reserve"><Setter Property="Opacity" Value="1"/></Style>
+    <Style Selector="StackPanel.reserve.idle"><Setter Property="Opacity" Value="0"/></Style>
+    <!-- A picture that plays its video when clicked, with a small play badge at the bottom right -->
+    <Style Selector="Button.thumbbtn"><Setter Property="Padding" Value="0"/><Setter Property="BorderThickness" Value="0"/><Setter Property="CornerRadius" Value="3"/>
+      <Setter Property="Background" Value="{DynamicResource Frame}"/><Setter Property="Cursor" Value="Hand"/><Setter Property="ClipToBounds" Value="True"/>
+      <Setter Property="Width" Value="150"/><Setter Property="Height" Value="100"/></Style>
+    <Style Selector="Button.thumbbtn:pointerover /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="Background" Value="{DynamicResource Frame}"/></Style>
+    <Style Selector="Button.thumbbtn Border.playbadge"><Setter Property="Background" Value="#99000000"/></Style>
+    <Style Selector="Button.thumbbtn:pointerover Border.playbadge"><Setter Property="Background" Value="#E6000000"/></Style>
+  </UserControl.Styles>
+  <Panel>
+  <ScrollViewer Classes="gutter">
+    <Grid RowDefinitions="Auto,*" Margin="12,16,12,12">
+      <DockPanel Grid.Row="0" Margin="0,0,0,16">
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Bottom">
+          <Button Classes="primary" Content="Start scan" Command="{Binding StartCommand}" IsVisible="{Binding !IsRunning}" FontSize="15" Padding="20,9"/>
+          <Button Content="Stop scan" Command="{Binding StopCommand}" IsVisible="{Binding IsRunning}" IsEnabled="{Binding !Stopping}" FontSize="15" Padding="20,9"/>
+        </StackPanel>
+        <StackPanel>
+          <TextBlock Classes="h1" Text="Scan"/>
+          <TextBlock Classes="muted" Margin="0,4,0,0" Text="Looks at every file in a folder and decides where it belongs. Nothing is moved until you say so."/>
+        </StackPanel>
+      </DockPanel>
+
+      <Grid Grid.Row="1" ColumnDefinitions="*,340" ColumnSpacing="20">
+        <StackPanel Spacing="16">
+          <!-- The folder to organize -->
+          <Border Classes="panel" VerticalAlignment="Top">
+            <StackPanel Spacing="10">
+              <TextBlock Classes="h2" Text="Folder to organize"/>
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                <TextBox Text="{Binding Folder}" PlaceholderText="The folder with the files, e.g. D:\Downloads" IsEnabled="{Binding !IsRunning}"/>
+                <Button Grid.Column="1" Content="Browse..." Command="{Binding BrowseCommand}" IsEnabled="{Binding !IsRunning}"/>
+              </Grid>
+              <ItemsControl ItemsSource="{Binding Recent}" IsVisible="{Binding !IsRunning}">
+                <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:RecentFolder">
+                    <Border Classes="tag" ToolTip.Tip="{Binding Path}">
+                      <StackPanel Orientation="Horizontal" Spacing="6">
+                        <Button Classes="link" Command="{Binding Command}">
+                          <TextBlock Text="{Binding Path}" FontSize="13" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" MaxWidth="400"/>
+                        </Button>
+                        <Button Classes="link" Command="{Binding Remove}" Padding="2,0" VerticalAlignment="Center"
+                                ToolTip.Tip="Remove from this list" AutomationProperties.Name="Remove from this list">
+                          <TextBlock Text="✕" FontSize="12" Foreground="{DynamicResource Muted}"/>
+                        </Button>
+                      </StackPanel>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <Border IsVisible="{Binding HasError}" Background="{DynamicResource GreaseWash}" CornerRadius="6" Padding="12,10">
+                <TextBlock Text="{Binding Error}" TextWrapping="Wrap"/>
+              </Border>
+            </StackPanel>
+          </Border>
+
+          <!-- Progress -->
+          <Border Classes="panel" VerticalAlignment="Top">
+            <StackPanel Spacing="14">
+              <TextBlock IsVisible="{Binding IsIdle}" Classes="muted" TextWrapping="Wrap"
+                         Text="No scan yet. For each file the program checks, in this order: 1) the file name, 2) the title and comment tags, 3) for videos, the text in about 25 frames (OCR). The first rule that matches decides. Videos that were read before are not read again, so a second scan is much faster."/>
+
+              <StackPanel Spacing="14" IsVisible="{Binding !IsIdle}">
+                <StackPanel Spacing="6">
+                  <DockPanel>
+                    <TextBlock DockPanel.Dock="Right" Text="{Binding FilePercentText}" FontSize="24" FontWeight="SemiBold" VerticalAlignment="Bottom"/>
+                    <TextBlock Text="Files" FontSize="17" FontWeight="SemiBold" VerticalAlignment="Bottom"/>
+                  </DockPanel>
+                  <ProgressBar Classes="files" Value="{Binding FilePercent}" Maximum="100" Height="14" CornerRadius="7"/>
+                  <DockPanel>
+                    <TextBlock DockPanel.Dock="Right" Classes="muted" Text="{Binding Left}" Margin="12,0,0,0"/>
+                    <TextBlock Text="{Binding FileText}"/>
+                  </DockPanel>
+                </StackPanel>
+
+                <!-- The file being looked at -->
+                <StackPanel Spacing="6" IsVisible="{Binding IsRunning}">
+                  <TextBlock Text="{Binding CurrentFile}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" MinHeight="22"/>
+                  <TextBlock Classes="muted small" Text="{Binding StageText}" MinHeight="18"/>
+                  <StackPanel Classes="reserve" Classes.idle="{Binding !ShowFrames}" Spacing="4" MinHeight="32">
+                    <ProgressBar Classes="frames" Value="{Binding FramePercent}" Maximum="100" Height="8" CornerRadius="4"/>
+                    <TextBlock Classes="muted small" Text="{Binding FrameText}" MinHeight="18"/>
+                  </StackPanel>
+                </StackPanel>
+
+                <UniformGrid Columns="3">
+                  <StackPanel Margin="0,0,0,12"><TextBlock Classes="muted small" Text="Matched"/><TextBlock Text="{Binding Matched}" FontSize="17" FontWeight="SemiBold"/></StackPanel>
+                  <StackPanel Margin="0,0,0,12"><TextBlock Classes="muted small" Text="Unmatched"/><TextBlock Text="{Binding Unmatched}" FontSize="17" FontWeight="SemiBold"/></StackPanel>
+                  <StackPanel Margin="0,0,0,12"><TextBlock Classes="muted small" Text="Videos that can't be read"/><TextBlock Text="{Binding Corrupt}" FontSize="17" FontWeight="SemiBold"/></StackPanel>
+                  <StackPanel><TextBlock Classes="muted small" Text="Videos read now"/><TextBlock Text="{Binding OcrDone}" FontSize="17" FontWeight="SemiBold"/></StackPanel>
+                  <StackPanel><TextBlock Classes="muted small" Text="Known from before"/><TextBlock Text="{Binding CacheHits}" FontSize="17" FontWeight="SemiBold"/></StackPanel>
+                  <StackPanel><TextBlock Classes="muted small" Text="Time so far"/><TextBlock Text="{Binding Elapsed}" FontSize="17" FontWeight="SemiBold"/></StackPanel>
+                </UniformGrid>
+
+                <!-- What the video OCR is reading -->
+                <StackPanel Spacing="4" IsVisible="{Binding Lines, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                  <TextBlock Classes="muted small" Text="Text found in the video"/>
+                  <Border Background="{DynamicResource Table}" CornerRadius="4" Padding="10,8">
+                    <TextBlock Text="{Binding Lines}" FontFamily="Consolas, Menlo, monospace" FontSize="12" TextWrapping="Wrap"/>
+                  </Border>
+                </StackPanel>
+
+                <Border Background="{DynamicResource Frame}" CornerRadius="3" Padding="4" ClipToBounds="True" HorizontalAlignment="Left" IsVisible="{Binding HasThumbs}">
+                  <ItemsControl ItemsSource="{Binding Thumbs}">
+                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="3"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:ScanThumb">
+                        <Button Classes="thumbbtn" Command="{Binding Play}" ToolTip.Tip="Play this video" AutomationProperties.Name="Play this video">
+                          <Panel>
+                            <Image Source="{Binding Image}" Width="150" Height="100" Stretch="UniformToFill"/>
+                            <Border Classes="playbadge" Width="24" Height="24" CornerRadius="12" Margin="0,0,6,6" HorizontalAlignment="Right" VerticalAlignment="Bottom" IsHitTestVisible="False">
+                              <Path Data="M0,0 L0,10 L9,5 Z" Fill="White" Width="9" Height="10" Stretch="Uniform" Margin="2,0,0,0" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                          </Panel>
+                        </Button>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </Border>
+
+                <Border IsVisible="{Binding IsDone}" Background="{DynamicResource KeepWash}" CornerRadius="4" Padding="14,12">
+                  <StackPanel Spacing="10">
+                    <TextBlock Text="{Binding Message}" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                      <Button Classes="primary" Content="Review the moves" Command="{Binding ReviewCommand}"/>
+                      <Button Content="Look at the unmatched files" Command="{Binding ShowUnmatchedCommand}"/>
+                    </StackPanel>
+                  </StackPanel>
+                </Border>
+                <Border IsVisible="{Binding IsProblem}" Background="{DynamicResource GreaseWash}" CornerRadius="4" Padding="14,12">
+                  <StackPanel Spacing="10">
+                    <TextBlock Text="{Binding Message}" TextWrapping="Wrap"/>
+                    <Button Content="Review what was found" Command="{Binding ReviewCommand}" HorizontalAlignment="Left"/>
+                  </StackPanel>
+                </Border>
+              </StackPanel>
+            </StackPanel>
+          </Border>
+        </StackPanel>
+
+        <StackPanel Grid.Column="1" Spacing="16">
+          <Border Classes="panel">
+            <StackPanel Spacing="6">
+              <TextBlock Classes="h2" Text="Last scan"/>
+              <TextBlock Text="{Binding LastScanText}" TextWrapping="Wrap"/>
+              <TextBlock Classes="muted" Text="{Binding LastScanDetail}" TextWrapping="Wrap"/>
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </Grid>
+    </Grid>
+  </ScrollViewer>
+  <!-- Toast (a video that can't be opened) -->
+  <Border IsVisible="{Binding Toast, Converter={x:Static ObjectConverters.IsNotNull}}"
+          Background="{DynamicResource Ink}" CornerRadius="4" Padding="14,10" Margin="0,0,0,24"
+          HorizontalAlignment="Center" VerticalAlignment="Bottom" MaxWidth="760">
+    <TextBlock Text="{Binding Toast}" Foreground="{DynamicResource Sheet}" TextWrapping="Wrap"/>
+  </Border>
+  </Panel>
+</UserControl>

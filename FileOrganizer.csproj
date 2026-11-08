@@ -1,12 +1,28 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <!--
+    The engine, shared by the front ends in apps/:
+      apps/Cli      - command line (the original program, FileOrganizer.exe <folder>)
+      apps/Desktop  - Avalonia desktop app for Windows and Linux
+      apps/Web      - browser interface, also for headless Linux servers and NAS
+  -->
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <OutputType>Library</OutputType>
     <!-- Plain net10.0 (no "-windows" suffix) so the app builds and runs on Linux, macOS and Windows -->
     <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>FileOrganizer.Core</AssemblyName>
+    <RootNamespace>FileOrganizer</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The front ends and tests live in sub folders with their own projects -->
+    <Compile Remove="apps/**;tests/**" />
+    <None Remove="apps/**;tests/**" />
+    <Content Remove="apps/**;tests/**" />
+    <EmbeddedResource Remove="apps/**;tests/**" />
+  </ItemGroup>
 
   <ItemGroup>
     <!-- Video frame extraction -->
@@ -26,9 +42,4 @@
     <PackageReference Include="TagLibSharp" Version="2.3.0" />
   </ItemGroup>
 
-  <ItemGroup>
-    <None Update="settings.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
 </Project>

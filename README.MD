@@ -3,7 +3,9 @@
 ## What it does
 This program is an automated, non-destructive file sorting and renaming utility. It analyzes files in a target directory and categorizes them based on filenames, internal metadata (Title/Comments), and **Optical Character Recognition (OCR) extracted directly from video frames**. 
 
-Instead of moving or renaming files automatically, it generates scripts: PowerShell (`.ps1`) scripts on Windows and shell (`.sh`) scripts on Linux/macOS. This allows you to review the proposed changes before executing them.
+It comes in three forms that share one engine (`Core`): a **desktop app** (`apps/Desktop`), a **web app** (`apps/Web`, for a computer you reach over the network) and the original **command line** (`apps/Cli`). The desktop and web apps scan a folder, show where each file will go and why, let you change that per file, make rules from the text found in files that matched nothing, and either **move the files for you** (after a confirmation, never overwriting anything) or **write the scripts** for you to run yourself.
+
+The command line never moves anything by itself: it generates scripts: PowerShell (`.ps1`) scripts on Windows and shell (`.sh`) scripts on Linux/macOS. This allows you to review the proposed changes before executing them.
 
 ## Features
 - Multi-stage matching priority:  
@@ -124,28 +126,30 @@ Use `true` if the category name is a general word (like `Barry`) that should not
 
 ## How to Run
 
-1. Open a terminal (Command Prompt/PowerShell on Windows, any shell on Linux).
-2. Build and execute the compiled program. Or use the dotnet cli to run. Pass the target folder as an argument.
-
-**Windows:**  
-Build exe and run:  
+### Desktop app
 ```cmd
-dotnet build  
-FileOrganizer.exe "C:\Path\To\Your\Files"
+dotnet run --project apps/Desktop
 ```
-After build the exe will be in `.\bin\Debug\net10.0`  
+Choose the folder, press **Start scan**, look at **Review** (and **Unmatched**, where you can make a rule from any text that was found), then **Move files now** or **Create scripts**.
 
-Alternatively, build and run using dotnet-cli:  
+### Web app
 ```cmd
-dotnet run -- "C:\Path\To\Your\Files"
+dotnet run --project apps/Web
 ```
+Opens http://127.0.0.1:5078 (this computer only). To use it from another computer, listen on the network: `--urls http://0.0.0.0:5078`. A token is then required: it is printed at start (`Open: ...?token=...`) and kept in `.token` in the data folder. Options: `--data <folder>`, `--urls`, `--token <secret|off>`, `--no-browser`.
 
-**Linux:**  
-```bash
-dotnet build
-./bin/Debug/net10.0/FileOrganizer "/path/to/your/files"
-# or
-dotnet run -- "/path/to/your/files"
+### Data folder
+`settings.json` (your rules), the pictures of videos (`_thumbs`), the OCR models and the last folder used live in the data folder: `--data <folder>`, or the environment variable `FILEORG_DATA`, or the current folder if it holds a `settings.json`, else `%APPDATA%\FileOrganizer` (`~/.config/FileOrganizer` on Linux). The OCR cache `_FileProcessor_VideoOcrResult.json` stays in the scanned folder, as before.
+
+### Command line (writes scripts only)
+```cmd
+dotnet run --project apps/Cli -- "C:\Path\To\Your\Files"
+```
+or, after `dotnet build`, `apps\Cli\bin\Debug\net10.0\FileOrganizer.Cli.exe "C:\Path\To\Your\Files"` (on Linux `./FileOrganizer.Cli "/path/to/your/files"`).
+
+### Tests
+```cmd
+dotnet test tests/CoreTests
 ```
 
 ### Applying the Changes

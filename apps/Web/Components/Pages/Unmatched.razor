@@ -1,0 +1,194 @@
+@page "/unmatched"
+@implements IDisposable
+@inject AppController App
+@inject NavigationManager Nav
+
+<PageTitle>Unmatched</PageTitle>
+
+<div class="page">
+    <div class="page-head">
+        <div>
+            <h1>Unmatched</h1>
+            <p>@(App.Result == null ? "Files that no rule matched are listed here, with the text that was found in them." : rows.Count > 0 ? $"{Fmt.Plural(rows.Count, "file", "files")} matched nothing. Click a text to make a rule from it, or choose a folder for the file." : "Every file has a category.")</p>
+        </div>
+    </div>
+
+    @if (App.Result == null)
+    {
+        <div class="empty">
+            <h2>Nothing scanned yet</h2>
+            <button class="primary big" @onclick='() => Nav.NavigateTo("scan")'>Go to scan</button>
+        </div>
+    }
+    else if (rows.Count == 0)
+    {
+        <div class="empty">
+            <h2>Every file has a category</h2>
+            <button class="primary big" @onclick='() => Nav.NavigateTo("")'>Review the moves</button>
+        </div>
+    }
+    else
+    {
+        <div class="fo-list">
+            @foreach (var d in rows.Take(shown))
+            {
+                <div class="un-row" @key="d">
+                    <div class="fo-thumbs">
+                        @if (d.IsVideo)
+                        {
+                            @for (int part = 0; part < 3; part++) { <Thumb Decision="d" Index="IndexOf(d)" Part="part" /> }
+                        }
+                        else { <Thumb Decision="d" Index="IndexOf(d)" /> }
+                    </div>
+                    <div class="info">
+                        <div class="name">@d.FileName</div>
+                        <div class="chips">
+                            @if (d.Title.Length > 0) { <button class="chip btn" @onclick="() => OpenRule(d.Title)"><small>Title tag</small>@d.Title</button> }
+                            @if (d.Comment.Length > 0) { <button class="chip btn" @onclick="() => OpenRule(d.Comment)"><small>Comment tag</small>@d.Comment</button> }
+                            @foreach (var line in OcrText.Distinct(d.OcrLines).Where(l => l.Any(char.IsLetter))) { <button class="chip btn" @onclick="() => OpenRule(line)">@line</button> }
+                            @if (d.OcrCorrupt) { <span class="muted">The video can't be read.</span> }
+                        </div>
+                    </div>
+                    <div class="un-side">
+                    <select value="@FileDecision.LeaveHere" @onchange="e => Assign(d, e.Value!.ToString()!)" aria-label="Where @d.FileName goes">
+                        <option value="@FileDecision.LeaveHere">@FileDecision.LeaveHere</option>
+                        @foreach (var c in App.CategoryNames()) { <option value="@c">@c</option> }
+                    </select>
+                    <button class="icon del" @onclick="() => deleting = d" title="Delete the file (asks first)" aria-label="Delete @d.FileName"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill="currentColor" /></svg></button>
+                    </div>
+                </div>
+            }
+        </div>
+        @if (rows.Count > shown)
+        {
+            <div class="more"><button @onclick="() => shown += 100">Show more</button></div>
+        }
+    }
+</div>
+
+@if (ruleOpen)
+{
+    <div class="dialog-backdrop" @onclick="() => ruleOpen = false">
+        <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="rule-title" @onclick:stopPropagation="true">
+            <h2 id="rule-title">Make a rule</h2>
+            <div class="rule-line" style="margin-top:14px">
+                <select @bind="ruleType" @bind:after="Preview" aria-label="Rule type"><option>Contains</option><option>Regex</option></select>
+                <input type="text" @bind="ruleText" @bind:event="oninput" @bind:after="Preview" aria-label="Text to look for" />
+                <span></span>
+            </div>
+            <div class="rule-line">
+                <select @bind="ruleCategory" @bind:after="Preview" aria-label="Category">
+                    @foreach (var c in App.CategoryNames()) { <option value="@c">@c</option> }
+                </select>
+                <input type="text" placeholder="or a new category" @bind="newCategory" @bind:event="oninput" @bind:after="Preview" aria-label="New category" />
+                <span></span>
+            </div>
+            <p class="@(previewBad ? "warn-text" : "")" aria-live="polite">@preview</p>
+            <div class="buttons">
+                <button @onclick="() => ruleOpen = false">Cancel</button>
+                <button class="primary" disabled="@(!canAdd)" @onclick="AddRule">Add the rule</button>
+            </div>
+        </div>
+    </div>
+}
+
+<DeleteFileDialog Decision="deleting" OnCancel="() => deleting = null" OnDone="Deleted" />
+
+@if (toast != null)
+{
+    <div class="toast" role="status">@toast</div>
+}
+
+@code {
+    private List<FileDecision> rows = new();
+    private Dictionary<FileDecision, int> index = new();
+    private int shown = 100;
+    private bool ruleOpen, previewBad, canAdd;
+    private string ruleText = "", ruleType = "Contains", ruleCategory = "", newCategory = "", preview = "";
+    private string? toast;
+    private FileDecision? deleting;
+    private CancellationTokenSource? toastTimer;
+
+    protected override void OnInitialized()
+    {
+        Load();
+        App.ResultChanged += OnResult;
+    }
+
+    private void OnResult() => InvokeAsync(() => { Load(); StateHasChanged(); });
+
+    private void Load()
+    {
+        var decisions = App.Result?.Decisions ?? new List<FileDecision>();
+        index = new Dictionary<FileDecision, int>();
+        for (int i = 0; i < decisions.Count; i++) index[decisions[i]] = i;
+        rows = decisions.Where(d => d.Category == null && d.OverrideCategory == null).ToList();
+    }
+
+    private void Deleted((bool Ok, string Message) result)
+    {
+        deleting = null;
+        ShowToast(result.Message, result.Ok ? 6000 : 10000);
+    }
+
+    private int IndexOf(FileDecision d) => index.TryGetValue(d, out var i) ? i : -1;
+
+    // A file given a folder by hand leaves this list and shows up in Review
+    private void Assign(FileDecision d, string choice)
+    {
+        d.Choose(choice);
+        Load();
+        App.NotifyDecisionsEdited();
+    }
+
+    private void OpenRule(string text)
+    {
+        ruleText = text;
+        ruleType = "Contains";
+        newCategory = "";
+        ruleCategory = App.CategoryNames().FirstOrDefault() ?? "";
+        ruleOpen = true;
+        Preview();
+    }
+
+    private string Category => newCategory.Trim().Length > 0 ? newCategory.Trim() : ruleCategory;
+
+    // How many of the files here would this rule catch?
+    private void Preview()
+    {
+        string text = ruleText.Trim(), category = Category;
+        var rule = new Rule(ruleType, text);
+        var error = RuleMatcher.Validate(rule);
+        previewBad = error != null;
+        canAdd = error == null && category.Length > 0 && FolderNames.IsSafe(category);
+        if (error != null) { preview = text.Length == 0 ? "Type the text to look for." : error[..1].ToUpper() + error[1..]; return; }
+        var trial = new Settings { Categories = { new Category { Name = "x", IgnoreCategoryInContent = true, Rules = { rule } } } };
+        int hits = rows.Count(d => RuleMatcher.Match(d.FileName, trial) != null || RuleMatcher.Match(d.Title, trial) != null
+            || RuleMatcher.Match(d.Comment, trial) != null || d.OcrLines.Any(l => RuleMatcher.Match(l, trial) != null));
+        preview = category.Length == 0 ? "Choose a category, or name a new one."
+            : !FolderNames.IsSafe(category) ? $"\"{category}\" can't be a folder name."
+            : $"Would match {hits:N0} of the {rows.Count:N0} files here, and send them to {category}{(newCategory.Trim().Length > 0 ? " (a new category)" : "")}.";
+    }
+
+    private void AddRule()
+    {
+        string message = App.AddRule(Category, ruleType, ruleText, out bool ok);
+        ShowToast(message, ok ? 5000 : 9000);
+        if (ok) ruleOpen = false;
+    }
+
+    private void ShowToast(string text, int ms)
+    {
+        toast = text;
+        toastTimer?.Cancel();
+        toastTimer = new CancellationTokenSource();
+        var token = toastTimer.Token;
+        _ = Task.Delay(ms, token).ContinueWith(t => { if (t.IsCanceled) return; toast = null; InvokeAsync(StateHasChanged); });
+    }
+
+    public void Dispose()
+    {
+        App.ResultChanged -= OnResult;
+        toastTimer?.Cancel();
+    }
+}

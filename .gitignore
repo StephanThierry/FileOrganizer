@@ -378,3 +378,9 @@ test:.cs
 *.testStats.csv
 move_files.bat
 unmatched_files.txt
+
+# Web app runtime files
+.keys/
+.token
+state.json
+_thumbs/

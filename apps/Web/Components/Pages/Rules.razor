@@ -1,0 +1,206 @@
+@page "/rules"
+@implements IDisposable
+@inject AppController App
+@inject NavigationManager Nav
+
+<PageTitle>Rules</PageTitle>
+
+<div class="page">
+    <div class="page-head">
+        <div>
+            <h1>Rules</h1>
+            <p>Each category is a folder. A file goes to the first category in the list that matches its name, its title or comment tag, or the text in the video. Put the more specific categories first.</p>
+        </div>
+        <div class="inline">
+            <button disabled="@(!edited)" @onclick="Revert">Undo changes</button>
+            <button class="primary big" disabled="@(!edited)" @onclick="Save">Save</button>
+        </div>
+    </div>
+
+    @if (App.SettingsError != null && !savedOnce)
+    {
+        <div class="notice warn"><p><strong>settings.json could not be read:</strong> @App.SettingsError</p><p>Saving here replaces it (the old file is kept as settings.json.bck).</p></div>
+    }
+    @if (problems.Count > 0)
+    {
+        <div class="notice warn" role="alert"><p><strong>Not saved:</strong></p><ul>@foreach (var p in problems) { <li>@p</li> }</ul></div>
+    }
+
+    <div class="cat-layout">
+        <div>
+            <div class="cat-list">
+                @foreach (var (c, i) in cats.Select((c, i) => (c, i)))
+                {
+                    <button class="cat-item @(c == selected ? "selected" : "")" @onclick="() => selected = c">
+                        <span>@(c.Name.Length == 0 ? "(no name)" : c.Name)</span><span class="muted">@FilesOf(c)</span>
+                    </button>
+                }
+                @if (cats.Count == 0) { <p class="muted" style="padding:12px">No categories yet.</p> }
+            </div>
+            <p class="inline" style="margin-top:10px">
+                <button @onclick="AddCategory">Add category</button>
+                <button disabled="@(selected == null || cats.IndexOf(selected) <= 0)" @onclick="() => Move(-1)" aria-label="Move up">↑</button>
+                <button disabled="@(selected == null || cats.IndexOf(selected) >= cats.Count - 1)" @onclick="() => Move(1)" aria-label="Move down">↓</button>
+                <button class="danger" disabled="@(selected == null)" @onclick="DeleteCategory">Delete</button>
+            </p>
+        </div>
+
+        <div>
+            @if (selected != null)
+            {
+                <section class="panel">
+                    <h2>Category</h2>
+                    <div class="field" style="margin-top:10px">
+                        <input type="text" @bind="selected.Name" @bind:event="oninput" @bind:after="Edited" aria-label="Category (folder) name" />
+                    </div>
+                    <label class="inline"><input type="checkbox" checked="@selected.IgnoreCategoryInContent" @onchange="e => { selected.IgnoreCategoryInContent = (bool)e.Value!; Edited(); }" /> Don't use the name itself as a rule, only the rules below</label>
+
+                    <h2 style="margin-top:18px">Rules</h2>
+                    @foreach (var r in selected.Rules.ToList())
+                    {
+                        var error = RuleMatcher.Validate(r);
+                        <div class="rule-line" style="margin-top:8px" @key="r">
+                            <select @bind="r.Type" @bind:after="Edited" aria-label="Rule type"><option>Contains</option><option>Regex</option></select>
+                            <input type="text" @bind="r.Value" @bind:event="oninput" @bind:after="Edited" aria-label="Rule text" />
+                            <button @onclick="() => { selected.Rules.Remove(r); Edited(); }" aria-label="Remove rule">Remove</button>
+                        </div>
+                        @if (error != null) { <div class="rule-error">@(error[..1].ToUpper() + error[1..])</div> }
+                    }
+                    <p><button @onclick="() => { selected.Rules.Add(new Rule()); Edited(); }">Add rule</button></p>
+                </section>
+            }
+
+            <section class="panel">
+                <h2>Try a text</h2>
+                <div class="field" style="margin-top:10px">
+                    <input type="text" placeholder="A file name or text from a video" @bind="tryText" @bind:event="oninput" aria-label="Text to try" />
+                </div>
+                @if (tryText.Trim().Length > 0)
+                {
+                    <p aria-live="polite">@TryResult()</p>
+                }
+            </section>
+
+            @if (App.Result != null && !edited)
+            {
+                <p><button @onclick='() => Nav.NavigateTo("scan")'>Scan again</button></p>
+            }
+        </div>
+    </div>
+</div>
+
+@if (toast != null)
+{
+    <div class="toast" role="status">@toast</div>
+}
+
+@code {
+    private List<Category> cats = new();
+    private Category? selected;
+    private bool edited, savedOnce;
+    private List<string> problems = new();
+    private string tryText = "";
+    private string? toast;
+    private CancellationTokenSource? toastTimer;
+
+    protected override void OnInitialized()
+    {
+        Load();
+        App.SettingsChanged += OnSaved;
+        App.ResultChanged += OnResult;
+    }
+
+    private void OnSaved() => InvokeAsync(() => { if (!edited) { Load(); StateHasChanged(); } });
+    private void OnResult() => InvokeAsync(StateHasChanged);
+
+    private void Load()
+    {
+        string? keep = selected?.Name;
+        cats = App.Settings.Clone().Categories;
+        selected = cats.FirstOrDefault(c => c.Name == keep) ?? cats.FirstOrDefault();
+        edited = false;
+        problems = new();
+    }
+
+    private void Edited() => edited = true;
+
+    private string FilesOf(Category c)
+    {
+        if (App.Result == null) return "";
+        int n = App.Result.Decisions.Count(d => d.Category != null && d.Category.Equals(c.Name, StringComparison.OrdinalIgnoreCase));
+        return n == 0 ? "no files" : Fmt.Plural(n, "file", "files");
+    }
+
+    // The settings as they are being edited (what Save would write); the options stay as they are
+    private Settings Working()
+    {
+        var s = App.Settings.Clone();
+        s.Categories = cats;
+        return s;
+    }
+
+    private string TryResult()
+    {
+        var hits = RuleMatcher.Explain(tryText, Working());
+        if (hits.Count == 0) return "No category matches this text.";
+        return $"Goes to {hits[0].Category} ({hits[0].Trigger})."
+            + (hits.Count > 1 ? " Also matched, but later in the list: " + string.Join(", ", hits.Skip(1).Select(h => h.Category).Distinct()) + "." : "");
+    }
+
+    private void AddCategory()
+    {
+        string name = "New category";
+        for (int i = 2; cats.Any(c => c.Name.Equals(name, StringComparison.OrdinalIgnoreCase)); i++) name = $"New category {i}";
+        var c = new Category { Name = name, IgnoreCategoryInContent = true, Rules = { new Rule() } };
+        cats.Add(c);
+        selected = c;
+        Edited();
+    }
+
+    private void DeleteCategory()
+    {
+        if (selected == null) return;
+        int at = cats.IndexOf(selected);
+        cats.Remove(selected);
+        selected = cats.Count == 0 ? null : cats[Math.Min(at, cats.Count - 1)];
+        Edited();
+    }
+
+    private void Move(int by)
+    {
+        if (selected == null) return;
+        int at = cats.IndexOf(selected), to = at + by;
+        if (to < 0 || to >= cats.Count) return;
+        cats.RemoveAt(at);
+        cats.Insert(to, selected);
+        Edited();
+    }
+
+    private void Save()
+    {
+        problems = App.SaveSettings(Working());
+        if (problems.Count > 0) return;
+        savedOnce = true;
+        edited = false;
+        ShowToast(App.Result != null ? "Saved. The files of the last scan were sorted again with the new rules." : "Saved.");
+        Load();
+    }
+
+    private void Revert() => Load();
+
+    private void ShowToast(string text)
+    {
+        toast = text;
+        toastTimer?.Cancel();
+        toastTimer = new CancellationTokenSource();
+        var token = toastTimer.Token;
+        _ = Task.Delay(5000, token).ContinueWith(t => { if (t.IsCanceled) return; toast = null; InvokeAsync(StateHasChanged); });
+    }
+
+    public void Dispose()
+    {
+        App.SettingsChanged -= OnSaved;
+        App.ResultChanged -= OnResult;
+        toastTimer?.Cancel();
+    }
+}
