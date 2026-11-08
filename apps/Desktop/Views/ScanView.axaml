@@ -38,9 +38,15 @@
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="vm:RecentFolder">
                     <Border Classes="tag" ToolTip.Tip="{Binding Path}">
-                      <Button Classes="link" Command="{Binding Command}">
-                        <TextBlock Text="{Binding Path}" FontSize="13" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" MaxWidth="400"/>
-                      </Button>
+                      <StackPanel Orientation="Horizontal" Spacing="6">
+                        <Button Classes="link" Command="{Binding Command}">
+                          <TextBlock Text="{Binding Path}" FontSize="13" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" MaxWidth="400"/>
+                        </Button>
+                        <Button Classes="link" Command="{Binding Remove}" Padding="2,0" VerticalAlignment="Center"
+                                ToolTip.Tip="Remove from this list" AutomationProperties.Name="Remove from this list">
+                          <TextBlock Text="✕" FontSize="12" Foreground="{DynamicResource Muted}"/>
+                        </Button>
+                      </StackPanel>
                     </Border>
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>

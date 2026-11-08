@@ -7,7 +7,7 @@ using CommunityToolkit.Mvvm.Input;
 namespace FileOrganizer.Desktop.ViewModels;
 
 /// <summary>A folder used before, as a button.</summary>
-public sealed record RecentFolder(string Path, IRelayCommand Command);
+public sealed record RecentFolder(string Path, IRelayCommand Command, IRelayCommand Remove);
 
 public partial class ScanViewModel : ViewModelBase
 {
@@ -80,7 +80,7 @@ public partial class ScanViewModel : ViewModelBase
     public void RefreshInfo()
     {
         Recent.Clear();
-        foreach (var f in app.RecentFolders) Recent.Add(new RecentFolder(f, new RelayCommand(() => UseRecent(f))));
+        foreach (var f in app.RecentFolders) Recent.Add(new RecentFolder(f, new RelayCommand(() => UseRecent(f)), new RelayCommand(() => { app.ForgetFolder(f); RefreshInfo(); })));
         Categories.Clear();
         foreach (var c in app.Settings.Categories) Categories.Add(c.Name);
         int rules = app.Settings.Categories.Sum(c => c.Rules.Count);

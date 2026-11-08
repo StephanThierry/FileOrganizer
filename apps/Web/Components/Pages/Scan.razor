@@ -33,7 +33,13 @@
                 @if (App.RecentFolders.Count > 0 && !running)
                 {
                     <ul class="tags" aria-label="Folders used before">
-                        @foreach (var f in App.RecentFolders) { <li title="@f"><button class="link" @onclick="() => Use(f)">@f</button></li> }
+                        @foreach (var f in App.RecentFolders.ToList())
+                        {
+                            <li title="@f">
+                                <button class="link" @onclick="() => Use(f)">@f</button>
+                                <button class="link forget" @onclick="() => Forget(f)" title="Remove from this list" aria-label="Remove @f from this list">✕</button>
+                            </li>
+                        }
                     </ul>
                 }
                 @if (error != null) { <div class="notice warn"><p>@error</p></div> }
@@ -178,6 +184,8 @@
         error = App.SetTargetFolder(folder);
         StateHasChanged();
     }
+
+    private void Forget(string path) => App.ForgetFolder(path);
 
     private void Start()
     {

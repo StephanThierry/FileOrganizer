@@ -100,6 +100,12 @@ public sealed class AppController : IDisposable
         return null;
     }
 
+    /// <summary>Takes a folder out of the list of recently used folders (the folder itself is not touched).</summary>
+    public void ForgetFolder(string path)
+    {
+        if (state.Recent.RemoveAll(f => string.Equals(f, path, StringComparison.OrdinalIgnoreCase)) > 0) SaveState();
+    }
+
     // ---------- Scanning ----------
 
     /// <summary>Starts a scan of the chosen folder. Returns an error message, or null when it started.</summary>

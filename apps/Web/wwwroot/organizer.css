@@ -41,3 +41,5 @@
   .un-row { grid-template-columns: 1fr; }
   .cat-layout { grid-template-columns: 1fr; }
 }
+.tags .forget { color: var(--muted); margin-left: 6px; font-size: .8rem; }
+.tags .forget:hover { color: var(--grease); text-decoration: none; }
