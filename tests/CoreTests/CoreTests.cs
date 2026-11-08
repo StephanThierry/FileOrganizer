@@ -559,6 +559,14 @@ public class AppControllerTests : IDisposable
     }
 
     [Fact]
+    public void OcrTextShownWithoutRepeats()
+    {
+        var lines = OcrText.Distinct(new[] { "ZEBRA", "Zebra Corp", "zebracorp.", "ZEBRA CORP", "Other Text", "Oth" });
+        Assert.Equal(new[] { "Zebra Corp", "Other Text" }, lines);
+        Assert.Empty(OcrText.Distinct(new[] { "...", " " }));
+    }
+
+    [Fact]
     public void VideoSamplingStartsWithTheFirstFrame()
     {
         var times = OpenCvVideoOcr.SampleTimes(60);

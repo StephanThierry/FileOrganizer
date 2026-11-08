@@ -142,7 +142,7 @@ public sealed class UnmatchedRow : FileRow
         if (d.Title.Length > 0) Lines.Add(Make("Title tag", d.Title));
         if (d.Comment.Length > 0) Lines.Add(Make("Comment tag", d.Comment));
         // Lines without a single letter (time codes, numbers) are noise as a starting point for a rule
-        foreach (var line in d.OcrLines.Where(l => l.Any(char.IsLetter))) Lines.Add(Make("", line));
+        foreach (var line in OcrText.Distinct(d.OcrLines).Where(l => l.Any(char.IsLetter))) Lines.Add(Make("", line));
     }
 
     public bool HasLines => Lines.Count > 0;

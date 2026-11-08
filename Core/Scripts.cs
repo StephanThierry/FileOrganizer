@@ -80,7 +80,7 @@ public static class ScriptWriter
             writer.WriteLine(d.FileName + "...");
             if (!string.IsNullOrWhiteSpace(d.Title)) writer.WriteLine($"    Metadata Title: \"{d.Title}\"");
             if (!string.IsNullOrWhiteSpace(d.Comment)) writer.WriteLine($"    Metadata Comment: \"{d.Comment}\"");
-            foreach (var line in d.OcrLines) writer.WriteLine($"    OCR Detected Text: \"{line}\"");
+            foreach (var line in OcrText.Distinct(d.OcrLines)) writer.WriteLine($"    OCR Detected Text: \"{line}\"");
             writer.WriteLine();
         }
         return path;

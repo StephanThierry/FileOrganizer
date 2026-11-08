@@ -39,7 +39,7 @@
                         <div class="chips">
                             @if (d.Title.Length > 0) { <button class="chip btn" @onclick="() => OpenRule(d.Title)"><small>Title tag</small>@d.Title</button> }
                             @if (d.Comment.Length > 0) { <button class="chip btn" @onclick="() => OpenRule(d.Comment)"><small>Comment tag</small>@d.Comment</button> }
-                            @foreach (var line in d.OcrLines.Where(l => l.Any(char.IsLetter))) { <button class="chip btn" @onclick="() => OpenRule(line)">@line</button> }
+                            @foreach (var line in OcrText.Distinct(d.OcrLines).Where(l => l.Any(char.IsLetter))) { <button class="chip btn" @onclick="() => OpenRule(line)">@line</button> }
                             @if (d.OcrCorrupt) { <span class="muted">The video can't be read.</span> }
                         </div>
                     </div>

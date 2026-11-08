@@ -179,6 +179,30 @@ public sealed class OpenCvVideoOcr : IVideoOcr, IDisposable
     public void Dispose() => reader?.Dispose();
 }
 
+/// <summary>Tidying the text found in a video before it is shown (matching still uses every line that was read).</summary>
+public static class OcrText
+{
+    private static string Key(string line) => new string(line.Where(char.IsLetterOrDigit).Select(char.ToLowerInvariant).ToArray());
+
+    /// <summary>
+    /// The lines without repeats: the same text apart from case, spacing and punctuation counts as one, and so does a line that is
+    /// only a piece of a longer one (the same text read in another frame, or cut off). The longest wording is kept, in first-seen order.
+    /// </summary>
+    public static List<string> Distinct(IEnumerable<string> lines)
+    {
+        var kept = new List<(string Line, string Key)>();
+        foreach (var line in lines)
+        {
+            string key = Key(line);
+            if (key.Length == 0) continue;
+            if (kept.Any(k => k.Key.Contains(key, StringComparison.Ordinal))) continue;      // already there, or part of a longer line
+            kept.RemoveAll(k => key.Contains(k.Key, StringComparison.Ordinal));               // this one replaces shorter pieces of itself
+            kept.Add((line, key));
+        }
+        return kept.Select(k => k.Line).ToList();
+    }
+}
+
 /// <summary>Small pictures of videos for the interfaces, kept in the data folder.</summary>
 public static class Thumbnails
 {
