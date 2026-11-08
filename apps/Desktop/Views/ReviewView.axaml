@@ -1,0 +1,142 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:FileOrganizer.Desktop.ViewModels"
+             x:Class="FileOrganizer.Desktop.Views.ReviewView"
+             x:DataType="vm:ReviewViewModel">
+  <UserControl.Styles>
+    <Style Selector="ListBox.rows ListBoxItem"><Setter Property="Padding" Value="0"/></Style>
+    <Style Selector="ListBox.rows ListBoxItem:selected /template/ ContentPresenter"><Setter Property="Background" Value="Transparent"/></Style>
+    <Style Selector="ListBox.rows ListBoxItem:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="Transparent"/></Style>
+    <Style Selector="Border.frow"><Setter Property="Background" Value="{DynamicResource Sheet}"/><Setter Property="Padding" Value="12,8"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Rule}"/><Setter Property="BorderThickness" Value="0,0,0,1"/></Style>
+    <Style Selector="Border.frow:pointerover"><Setter Property="Background" Value="{DynamicResource Table}"/></Style>
+    <Style Selector="Border.frow.done"><Setter Property="Opacity" Value="0.5"/></Style>
+    <Style Selector="Border.sourcechip"><Setter Property="Background" Value="{DynamicResource Raised}"/><Setter Property="CornerRadius" Value="9"/><Setter Property="Padding" Value="8,1"/></Style>
+    <Style Selector="Border.donechip"><Setter Property="Background" Value="{DynamicResource KeepWash}"/><Setter Property="CornerRadius" Value="9"/><Setter Property="Padding" Value="8,1"/></Style>
+    <Style Selector="Image.thumb"><Setter Property="Width" Value="96"/><Setter Property="Height" Value="64"/></Style>
+  </UserControl.Styles>
+
+  <!-- Fixed column widths: the rows are created as they scroll into view, and content-sized columns shared with the header would
+       change width with whichever rows exist (an endless layout loop in Avalonia) -->
+  <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" Margin="12,16,12,0">
+    <StackPanel Grid.Row="0" Margin="0,0,0,12">
+      <TextBlock Classes="h1" Text="Review"/>
+      <TextBlock Classes="muted" TextWrapping="Wrap" Margin="0,4,0,0"
+                 Text="Where each file will go, and why. Choose another folder for a file, or leave it where it is. Then move the files now, or write a script and run it yourself."/>
+    </StackPanel>
+
+    <Border Grid.Row="1" IsVisible="{Binding HasScripts}" Background="{DynamicResource KeepWash}" CornerRadius="10" Padding="16,12" Margin="0,0,0,12">
+      <StackPanel Spacing="6">
+        <SelectableTextBlock Text="{Binding ScriptsText}" TextWrapping="Wrap"/>
+        <Button Content="Open the folder" Command="{Binding OpenScriptsFolderCommand}" HorizontalAlignment="Left"/>
+      </StackPanel>
+    </Border>
+
+    <WrapPanel Grid.Row="2" Margin="0,0,0,10" IsVisible="{Binding HasRows}">
+      <TextBlock Text="Show" VerticalAlignment="Center" Margin="0,0,8,6"/>
+      <ComboBox ItemsSource="{Binding Filters}" SelectedItem="{Binding SelectedFilter}" MinWidth="230" Margin="0,0,16,6"/>
+      <TextBox Text="{Binding Search}" PlaceholderText="Filter by file name or rule" Width="280" Margin="0,0,16,6"/>
+      <CheckBox IsChecked="{Binding AlsoRename}" IsVisible="{Binding HasRenames}" Content="Also rename files from their title or comment tag" Margin="0,0,0,6"/>
+    </WrapPanel>
+
+    <!-- Nothing scanned yet -->
+    <Border Grid.Row="3" Classes="panel" Padding="40" VerticalAlignment="Top" IsVisible="{Binding !HasResult}">
+      <StackPanel HorizontalAlignment="Center" Spacing="10">
+        <TextBlock Classes="h2" Text="Nothing to review yet" HorizontalAlignment="Center"/>
+        <TextBlock Classes="muted" Text="Scan a folder first. The files that match a rule are listed here." HorizontalAlignment="Center"/>
+        <Button Classes="primary" Content="Go to scan" Command="{Binding GoToScanCommand}" HorizontalAlignment="Center"/>
+      </StackPanel>
+    </Border>
+    <Border Grid.Row="3" Classes="panel" Padding="40" VerticalAlignment="Top">
+      <Border.IsVisible>
+        <MultiBinding Converter="{x:Static BoolConverters.And}">
+          <Binding Path="HasResult"/>
+          <Binding Path="!HasRows"/>
+        </MultiBinding>
+      </Border.IsVisible>
+      <StackPanel HorizontalAlignment="Center" Spacing="10">
+        <TextBlock Classes="h2" Text="No file matched a rule" HorizontalAlignment="Center"/>
+        <TextBlock Classes="muted" Text="Look at the unmatched files and make rules from the text that was found in them." HorizontalAlignment="Center"/>
+        <Button Classes="primary" Content="Look at the unmatched files" Command="{Binding GoToUnmatchedCommand}" HorizontalAlignment="Center"/>
+      </StackPanel>
+    </Border>
+
+    <Border Grid.Row="3" BorderBrush="{DynamicResource Rule}" BorderThickness="1" CornerRadius="10" ClipToBounds="True" IsVisible="{Binding HasRows}">
+      <DockPanel>
+        <Border DockPanel.Dock="Top" Background="{DynamicResource Table}" Padding="12,6,32,6">
+          <Grid ColumnDefinitions="104,40,*,210" ColumnSpacing="12">
+            <TextBlock Grid.Column="2" Text="File, and why it matches" Classes="muted small" FontWeight="SemiBold"/>
+            <TextBlock Grid.Column="3" Text="Goes to" Classes="muted small" FontWeight="SemiBold"/>
+          </Grid>
+        </Border>
+        <ListBox Classes="rows" ItemsSource="{Binding Rows}" Background="Transparent">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:FileRow">
+              <Border Classes="frow" Classes.done="{Binding IsDone}">
+                <Grid ColumnDefinitions="104,40,*,210" ColumnSpacing="12">
+                  <Border Background="{DynamicResource Frame}" CornerRadius="3" Padding="4" HorizontalAlignment="Left" VerticalAlignment="Center" Width="104" Height="72">
+                    <Panel>
+                      <Image Classes="thumb" Source="{Binding Thumb}" Stretch="UniformToFill" IsVisible="{Binding IsVideo}"/>
+                      <PathIcon Data="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z" Foreground="{DynamicResource Muted}" Width="26" Height="26" IsVisible="{Binding !IsVideo}"/>
+                    </Panel>
+                  </Border>
+                  <!-- Play: opens the file in the default player -->
+                  <Button Grid.Column="1" Classes="icon" Command="{Binding PlayFileCommand}" ToolTip.Tip="Open it (in the default player)" VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <Path Data="M3,1.5 L3,12.5 L12,7 Z" Fill="{Binding $parent[Button].Foreground}" Width="14" Height="14"/>
+                  </Button>
+                  <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="3">
+                    <TextBlock Text="{Binding FileName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                      <Border Classes="sourcechip"><TextBlock Text="{Binding SourceText}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource Muted}"/></Border>
+                      <TextBlock Text="{Binding Trigger}" Classes="muted small" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <TextBlock Text="{Binding RenameText}" IsVisible="{Binding HasRename}" Classes="small" Foreground="{DynamicResource Accent}" TextTrimming="CharacterEllipsis"/>
+                  </StackPanel>
+                  <StackPanel Grid.Column="3" VerticalAlignment="Center" Spacing="4">
+                    <ComboBox ItemsSource="{Binding Choices}" SelectedItem="{Binding Choice}" IsEnabled="{Binding !IsDone}" HorizontalAlignment="Stretch"/>
+                    <Border Classes="donechip" IsVisible="{Binding IsDone}" HorizontalAlignment="Left"><TextBlock Text="Moved" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource Keep}"/></Border>
+                  </StackPanel>
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </DockPanel>
+    </Border>
+
+    <Border Grid.Row="4" Background="{DynamicResource Sheet}" BorderBrush="{DynamicResource Rule}" BorderThickness="0,1,0,0" Padding="16,12" Margin="-12,12,-12,0" IsVisible="{Binding HasResult}">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+          <Button Content="Create scripts" Command="{Binding CreateScriptsCommand}" FontSize="15" Padding="18,8"
+                  ToolTip.Tip="Writes move_files (and rename_files, unmatched_files.txt) in the scanned folder, to run yourself"/>
+          <Button Classes="primary" Content="Move files now" Command="{Binding AskMoveCommand}" IsEnabled="{Binding HasPending}" FontSize="15" Padding="18,8"/>
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+          <TextBlock Text="{Binding Summary}" FontSize="16" FontWeight="SemiBold"/>
+          <TextBlock Text="{Binding Detail}" Classes="muted" VerticalAlignment="Bottom"/>
+        </StackPanel>
+      </DockPanel>
+    </Border>
+
+    <!-- Toast -->
+    <Border Grid.Row="3" Grid.RowSpan="2" IsVisible="{Binding Toast, Converter={x:Static ObjectConverters.IsNotNull}}"
+            Background="{DynamicResource Ink}" CornerRadius="4" Padding="14,10" Margin="0,0,0,80"
+            HorizontalAlignment="Center" VerticalAlignment="Bottom" MaxWidth="760">
+      <TextBlock Text="{Binding Toast}" Foreground="{DynamicResource Sheet}" TextWrapping="Wrap"/>
+    </Border>
+
+    <!-- Confirmation before moving -->
+    <Grid Grid.RowSpan="5" Margin="-12,-16,-12,0" Background="#80000000" IsVisible="{Binding ConfirmVisible}">
+      <Border Classes="panel" Width="580" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="24">
+        <StackPanel Spacing="12">
+          <TextBlock Classes="h2" Text="{Binding ConfirmTitle}" TextWrapping="Wrap"/>
+          <TextBlock Classes="muted" Text="{Binding ConfirmText}" TextWrapping="Wrap"/>
+          <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right" Margin="0,8,0,0">
+            <Button Content="Cancel" Command="{Binding ConfirmNoCommand}"/>
+            <Button Classes="primary" Content="{Binding ConfirmButton}" Command="{Binding ConfirmYesCommand}"/>
+          </StackPanel>
+        </StackPanel>
+      </Border>
+    </Grid>
+  </Grid>
+</UserControl>

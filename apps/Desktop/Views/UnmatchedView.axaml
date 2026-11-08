@@ -1,0 +1,127 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:FileOrganizer.Desktop.ViewModels"
+             x:Class="FileOrganizer.Desktop.Views.UnmatchedView"
+             x:DataType="vm:UnmatchedViewModel">
+  <UserControl.Styles>
+    <Style Selector="ListBox.rows ListBoxItem"><Setter Property="Padding" Value="0"/></Style>
+    <Style Selector="ListBox.rows ListBoxItem:selected /template/ ContentPresenter"><Setter Property="Background" Value="Transparent"/></Style>
+    <Style Selector="ListBox.rows ListBoxItem:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="Transparent"/></Style>
+    <Style Selector="Border.frow"><Setter Property="Background" Value="{DynamicResource Sheet}"/><Setter Property="Padding" Value="12,10"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Rule}"/><Setter Property="BorderThickness" Value="0,0,0,1"/></Style>
+    <Style Selector="Button.chip"><Setter Property="Padding" Value="10,3"/><Setter Property="CornerRadius" Value="12"/><Setter Property="FontSize" Value="12"/>
+      <Setter Property="Background" Value="{DynamicResource Raised}"/><Setter Property="Margin" Value="0,0,6,6"/><Setter Property="Cursor" Value="Hand"/></Style>
+    <Style Selector="Button.chip:pointerover /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="Background" Value="{DynamicResource AccentWash}"/></Style>
+    <Style Selector="TextBlock.bad"><Setter Property="Foreground" Value="{DynamicResource Grease}"/></Style>
+    <Style Selector="Image.thumb"><Setter Property="Width" Value="96"/><Setter Property="Height" Value="64"/></Style>
+  </UserControl.Styles>
+
+  <Grid RowDefinitions="Auto,Auto,*" Margin="12,16,12,12">
+    <StackPanel Grid.Row="0" Margin="0,0,0,12">
+      <TextBlock Classes="h1" Text="Unmatched"/>
+      <TextBlock Classes="muted" TextWrapping="Wrap" Margin="0,4,0,0"
+                 Text="Files that no rule caught, with the tags and the text found in them. Click a text to make a rule from it: the files it catches go to Review at once."/>
+    </StackPanel>
+    <TextBlock Grid.Row="1" Text="{Binding Summary}" FontWeight="SemiBold" Margin="0,0,0,10" IsVisible="{Binding HasResult}"/>
+
+    <Border Grid.Row="2" Classes="panel" Padding="40" VerticalAlignment="Top" IsVisible="{Binding !HasResult}">
+      <StackPanel HorizontalAlignment="Center" Spacing="10">
+        <TextBlock Classes="h2" Text="Nothing scanned yet" HorizontalAlignment="Center"/>
+        <TextBlock Classes="muted" Text="Scan a folder first. The files no rule matched are listed here." HorizontalAlignment="Center"/>
+        <Button Classes="primary" Content="Go to scan" Command="{Binding GoToScanCommand}" HorizontalAlignment="Center"/>
+      </StackPanel>
+    </Border>
+    <Border Grid.Row="2" Classes="panel" Padding="40" VerticalAlignment="Top">
+      <Border.IsVisible>
+        <MultiBinding Converter="{x:Static BoolConverters.And}">
+          <Binding Path="HasResult"/>
+          <Binding Path="!HasRows"/>
+        </MultiBinding>
+      </Border.IsVisible>
+      <StackPanel HorizontalAlignment="Center" Spacing="10">
+        <TextBlock Classes="h2" Text="Every file has a category" HorizontalAlignment="Center"/>
+        <Button Classes="primary" Content="Review the moves" Command="{Binding GoToReviewCommand}" HorizontalAlignment="Center"/>
+      </StackPanel>
+    </Border>
+
+    <Border Grid.Row="2" BorderBrush="{DynamicResource Rule}" BorderThickness="1" CornerRadius="10" ClipToBounds="True" IsVisible="{Binding HasRows}">
+      <ListBox Classes="rows" ItemsSource="{Binding Rows}" Background="Transparent">
+        <ListBox.ItemTemplate>
+          <DataTemplate x:DataType="vm:UnmatchedRow">
+            <Border Classes="frow">
+              <Grid ColumnDefinitions="104,40,*,210" ColumnSpacing="12">
+                <Border Background="{DynamicResource Frame}" CornerRadius="3" Padding="4" HorizontalAlignment="Left" VerticalAlignment="Top" Width="104" Height="72">
+                  <Panel>
+                    <Image Classes="thumb" Source="{Binding Thumb}" Stretch="UniformToFill" IsVisible="{Binding IsVideo}"/>
+                    <PathIcon Data="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z" Foreground="{DynamicResource Muted}" Width="26" Height="26" IsVisible="{Binding !IsVideo}"/>
+                  </Panel>
+                </Border>
+                <Button Grid.Column="1" Classes="icon" Command="{Binding PlayFileCommand}" ToolTip.Tip="Open it (in the default player)" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,16,0,0">
+                  <Path Data="M3,1.5 L3,12.5 L12,7 Z" Fill="{Binding $parent[Button].Foreground}" Width="14" Height="14"/>
+                </Button>
+                <StackPanel Grid.Column="2" Spacing="6">
+                  <TextBlock Text="{Binding FileName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                  <TextBlock Text="No text was found in the file name, the tags or the video." Classes="muted small" IsVisible="{Binding !HasLines}"/>
+                  <ItemsControl ItemsSource="{Binding Lines}">
+                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:TextLine">
+                        <Button Classes="chip" Command="{Binding Command}" ToolTip.Tip="Make a rule from this text">
+                          <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Text="{Binding Label}" FontWeight="SemiBold" Foreground="{DynamicResource Accent}" IsVisible="{Binding Label, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                            <TextBlock Text="{Binding Text}" TextTrimming="CharacterEllipsis" MaxWidth="420"/>
+                          </StackPanel>
+                        </Button>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                  <Button Classes="link" Content="Make a rule from the file name" Command="{Binding MakeNameRule}" HorizontalAlignment="Left" FontSize="12"/>
+                </StackPanel>
+                <StackPanel Grid.Column="3" Spacing="4" VerticalAlignment="Top">
+                  <TextBlock Text="Or send it to" Classes="muted small"/>
+                  <ComboBox ItemsSource="{Binding Choices}" SelectedItem="{Binding Choice}" HorizontalAlignment="Stretch"/>
+                </StackPanel>
+              </Grid>
+            </Border>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+    </Border>
+
+    <!-- Toast -->
+    <Border Grid.Row="2" IsVisible="{Binding Toast, Converter={x:Static ObjectConverters.IsNotNull}}"
+            Background="{DynamicResource Ink}" CornerRadius="4" Padding="14,10" Margin="0,0,0,20"
+            HorizontalAlignment="Center" VerticalAlignment="Bottom" MaxWidth="760">
+      <TextBlock Text="{Binding Toast}" Foreground="{DynamicResource Sheet}" TextWrapping="Wrap"/>
+    </Border>
+
+    <!-- Make a rule -->
+    <Grid Grid.RowSpan="3" Margin="-12,-16,-12,-12" Background="#80000000" IsVisible="{Binding RuleVisible}">
+      <Border Classes="panel" Width="620" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="24">
+        <StackPanel Spacing="12">
+          <TextBlock Classes="h2" Text="Make a rule"/>
+          <StackPanel Spacing="4">
+            <TextBlock Text="When the text contains" FontWeight="SemiBold"/>
+            <TextBox Text="{Binding RuleText}" AcceptsReturn="False"/>
+            <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,4,0,0">
+              <ComboBox ItemsSource="{Binding RuleTypes}" SelectedItem="{Binding RuleType}" MinWidth="150"/>
+              <TextBlock Classes="muted small" VerticalAlignment="Center" Text="Contains: the text as it is. Regex: a pattern, e.g. S\d\dE\d\d"/>
+            </StackPanel>
+          </StackPanel>
+          <StackPanel Spacing="4">
+            <TextBlock Text="...the file goes to" FontWeight="SemiBold"/>
+            <ComboBox ItemsSource="{Binding RuleCategories}" SelectedItem="{Binding RuleCategory}" HorizontalAlignment="Stretch" IsEnabled="{Binding !HasNewCategory}"/>
+            <TextBox Text="{Binding NewCategory}" PlaceholderText="...or the name of a new category (a new folder)"/>
+          </StackPanel>
+          <Border Background="{DynamicResource Table}" CornerRadius="6" Padding="12,10">
+            <TextBlock Text="{Binding RulePreview}" TextWrapping="Wrap" Classes.bad="{Binding RulePreviewBad}"/>
+          </Border>
+          <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right" Margin="0,8,0,0">
+            <Button Content="Cancel" Command="{Binding CancelRuleCommand}"/>
+            <Button Classes="primary" Content="Add the rule" Command="{Binding AddRuleCommand}" IsEnabled="{Binding CanAddRule}"/>
+          </StackPanel>
+        </StackPanel>
+      </Border>
+    </Grid>
+  </Grid>
+</UserControl>

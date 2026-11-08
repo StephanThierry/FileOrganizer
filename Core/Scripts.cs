@@ -186,6 +186,7 @@ public static class MoveExecutor
 
                 File.Move(source, target);
                 d.Done = true;
+                d.MovedTo = target;
                 if (category != null) moved++; else renamed++;
                 if (category != null && renames) renamed++;
             }

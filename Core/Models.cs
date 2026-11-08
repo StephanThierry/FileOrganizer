@@ -99,6 +99,8 @@ public sealed class FileDecision
     public bool Skip { get; set; }
     /// <summary>The file has been moved (or renamed) by the program.</summary>
     public bool Done { get; set; }
+    /// <summary>Where it is now, once Done.</summary>
+    public string? MovedTo { get; set; }
 
     [JsonIgnore] public bool IsMatched => Category != null;
     /// <summary>The category the file will go to: the user's choice, else the rules' (null: stays).</summary>

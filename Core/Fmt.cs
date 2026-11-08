@@ -16,6 +16,16 @@ public static class Fmt
         return $"about {(int)t.TotalHours} h {t.Minutes} min";
     }
 
+    public static string Ago(DateTime utc)
+    {
+        var d = DateTime.UtcNow - utc;
+        if (d.TotalMinutes < 2) return "Just now";
+        if (d.TotalHours < 1) return $"{(int)d.TotalMinutes} minutes ago";
+        if (d.TotalDays < 1) return $"{(int)d.TotalHours} hours ago";
+        if (d.TotalDays < 2) return "Yesterday";
+        return $"{(int)d.TotalDays} days ago";
+    }
+
     public static string Size(long bytes)
     {
         if (bytes >= 1L << 30) return $"{bytes / (double)(1L << 30):0.0} GB";

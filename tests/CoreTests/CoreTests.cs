@@ -479,3 +479,160 @@ public class ScriptsAndMoveTests : IDisposable
         Assert.Contains("not there any more", report.Messages.Single());
     }
 }
+
+public class AppControllerTests : IDisposable
+{
+    private readonly string root = Path.Combine(Path.GetTempPath(), "fo-app-" + Guid.NewGuid().ToString("N"));
+    private string Data => Path.Combine(root, "data");
+    private string Files => Path.Combine(root, "files");
+    public AppControllerTests() { Directory.CreateDirectory(Data); Directory.CreateDirectory(Files); }
+    public void Dispose() { try { Directory.Delete(root, true); } catch { } }
+
+    private AppController Open(Settings? settings = null)
+    {
+        if (settings != null) SettingsStore.Save(Data, settings);
+        return AppController.Open(Data);
+    }
+
+    private static void Scan(AppController app)
+    {
+        var done = new ManualResetEventSlim();
+        void Handler() => done.Set();
+        app.ResultChanged += Handler;
+        Assert.Null(app.StartScan());
+        Assert.True(done.Wait(TimeSpan.FromSeconds(20)));
+        app.ResultChanged -= Handler;
+    }
+
+    [Fact]
+    public void FirstRunHasNoRulesAndAScanNeedsFolderAndCategories()
+    {
+        using var app = Open();
+        Assert.True(app.IsFirstRun);
+        Assert.Equal("Choose the folder to organize first.", app.StartScan());
+        Assert.Null(app.SetTargetFolder(Files));
+        Assert.StartsWith("There are no categories yet", app.StartScan());
+        Assert.StartsWith("The folder", app.SetTargetFolder(Path.Combine(root, "nope")));
+        Assert.Equal(Files, app.TargetFolder);   // a wrong choice does not replace the good one
+    }
+
+    [Fact]
+    public void TheFolderIsRememberedWithTheRecentOnes()
+    {
+        using (var app = Open())
+        {
+            string second = Path.Combine(root, "second"); Directory.CreateDirectory(second);
+            app.SetTargetFolder(Files); app.SetTargetFolder(second); app.SetTargetFolder(Files);
+            Assert.Equal(new[] { Files, second }, app.RecentFolders);
+        }
+        using var again = AppController.Open(Data);
+        Assert.Equal(Files, again.TargetFolder);
+    }
+
+    [Fact]
+    public void ARuleMadeFromUnmatchedTextAppliesAtOnce()
+    {
+        File.WriteAllText(Path.Combine(Files, "a.txt"), "x");
+        File.WriteAllText(Path.Combine(Files, "Show S01.txt"), "x");
+        using var app = Open(Make.Rules(Make.Cat("Series", true, ("Regex", @"S\d\d"))));
+        app.SetTargetFolder(Files);
+        Scan(app);
+        Assert.Single(app.Result!.Unmatched);
+
+        string message = app.AddRule("Notes", "Contains", "a.t", out bool ok);   // a new category
+        Assert.True(ok, message);
+        Assert.Contains("Made the category Notes", message);
+        Assert.Equal("Notes", app.Result.Decisions.Single(d => d.FileName == "a.txt").Category);
+        Assert.Empty(app.Result.Unmatched);
+
+        // saved: a new controller sees it, and the new category does not match by its own name
+        using var reopened = AppController.Open(Data);
+        var notes = reopened.Settings.Categories.Single(c => c.Name == "Notes");
+        Assert.True(notes.IgnoreCategoryInContent);
+        Assert.Equal("a.t", notes.Rules.Single().Value);
+
+        Assert.Contains("has that rule already", app.AddRule("notes", "Contains", "A.T", out ok));
+        Assert.False(ok);
+        Assert.Contains("not a valid regular expression", app.AddRule("Notes", "Regex", "(", out ok));
+        Assert.Contains("can't be a folder name", app.AddRule("../x", "Contains", "y", out ok));
+        Assert.Contains("Choose a category", app.AddRule("", "Contains", "y", out ok));
+    }
+
+    [Fact]
+    public void SavingBadRulesIsRefusedAndChangesNothing()
+    {
+        using var app = Open(Make.Rules(Make.Cat("A", false, ("Contains", "a"))));
+        var bad = app.Settings.Clone();
+        bad.Categories.Add(new Category { Name = "B", Rules = { new Rule("Regex", "([") } });
+        var problems = app.SaveSettings(bad);
+        Assert.Single(problems);
+        Assert.Single(AppController.Open(Data).Settings.Categories);   // the file is unchanged
+        Assert.Single(app.Settings.Categories);
+    }
+
+    [Fact]
+    public void ChangingTheRulesReevaluatesTheResultAndRaisesTheEvents()
+    {
+        File.WriteAllText(Path.Combine(Files, "alpha.txt"), "x");
+        using var app = Open(Make.Rules(Make.Cat("Other", true, ("Contains", "zzz"))));
+        app.SetTargetFolder(Files);
+        Scan(app);
+        Assert.Single(app.Result!.Unmatched);
+
+        int settingsEvents = 0, resultEvents = 0;
+        app.SettingsChanged += () => settingsEvents++;
+        app.ResultChanged += () => resultEvents++;
+        var s = app.Settings.Clone();
+        s.Categories[0].Rules.Add(new Rule("Contains", "alpha"));
+        Assert.Empty(app.SaveSettings(s));
+        Assert.Equal((1, 1), (settingsEvents, resultEvents));
+        Assert.Equal("Other", app.Result.Decisions[0].Category);
+    }
+
+    [Fact]
+    public void ScriptsAndMovesFollowTheChoicesMadeInTheReview()
+    {
+        foreach (var n in new[] { "Show S01.txt", "Show S02.txt", "Show S03.txt", "plain.txt" }) File.WriteAllText(Path.Combine(Files, n), n);
+        using var app = Open(Make.Rules(Make.Cat("Series", true, ("Regex", @"S\d\d")), Make.Cat("Elsewhere", true)));
+        app.SetTargetFolder(Files);
+        Scan(app);
+        var s2 = app.Result!.Decisions.Single(d => d.FileName == "Show S02.txt"); s2.OverrideCategory = "Elsewhere";
+        var s3 = app.Result.Decisions.Single(d => d.FileName == "Show S03.txt"); s3.Skip = true;
+        Assert.Equal(2, app.Pending.Count());
+
+        var scripts = app.WriteScripts();
+        Assert.Equal(2, scripts.Moves);
+        Assert.NotNull(scripts.UnmatchedReport);          // plain.txt
+        string text = File.ReadAllText(scripts.MoveScript!);
+        Assert.Contains("Elsewhere", text);
+        Assert.DoesNotContain("Show S03.txt", text);
+
+        var report = app.MoveNow(alsoRename: false);
+        Assert.Equal(2, report.Moved);
+        Assert.True(File.Exists(Path.Combine(Files, "Series", "Show S01.txt")));
+        Assert.True(File.Exists(Path.Combine(Files, "Elsewhere", "Show S02.txt")));
+        Assert.True(File.Exists(Path.Combine(Files, "Show S03.txt")));      // left alone
+        Assert.Equal(Path.Combine(Files, "Series", "Show S01.txt"), app.PathOf(app.Result.Decisions.Single(d => d.FileName == "Show S01.txt")));
+        Assert.Empty(app.Pending);
+
+        // scripts made later leave out what has been moved
+        Assert.Null(app.WriteScripts().MoveScript);
+    }
+
+    [Fact]
+    public void ABrokenSettingsFileIsReportedAndBlocksScanning()
+    {
+        File.WriteAllText(SettingsStore.PathIn(Data), "{ nope");
+        using var app = AppController.Open(Data);
+        Assert.Contains("is not valid", app.SettingsError);
+        app.SetTargetFolder(Files);
+        Assert.Contains("is not valid", app.StartScan());
+    }
+
+    [Fact]
+    public void CategoryNamesIncludeTheFolderForUnreadableVideos()
+    {
+        using var app = Open(Make.Rules(Make.Cat("A"), Make.Cat("B")));
+        Assert.Equal(new[] { "A", "B", "_CHECK_" }, app.CategoryNames());
+    }
+}
