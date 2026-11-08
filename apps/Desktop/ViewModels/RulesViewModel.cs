@@ -46,6 +46,13 @@ public partial class CategoryItem : ObservableObject
     [ObservableProperty] private string name;
     [ObservableProperty] private bool ignoreName;
     [ObservableProperty] private string filesText = "";
+    /// <summary>Where the category stands in the order the rules are checked (1 is checked first).</summary>
+    [ObservableProperty] private int priority;
+
+    /// <summary>The line under the name in the list.</summary>
+    public string InfoText => $"Priority {Priority}" + (FilesText.Length > 0 ? " · " + FilesText : "");
+    partial void OnPriorityChanged(int value) => OnPropertyChanged(nameof(InfoText));
+    partial void OnFilesTextChanged(string value) => OnPropertyChanged(nameof(InfoText));
 
     public ObservableCollection<RuleItem> Rules { get; } = new();
 
@@ -77,7 +84,10 @@ public partial class RulesViewModel : ViewModelBase
     private readonly MainViewModel main;
     private bool loading;
 
+    /// <summary>The categories in priority order: the first one that matches wins. This is the order that is saved.</summary>
     public ObservableCollection<CategoryItem> Categories { get; } = new();
+    /// <summary>The same categories for the list on screen: alphabetical, each showing its priority.</summary>
+    public ObservableCollection<CategoryItem> SortedCategories { get; } = new();
     public string[] RuleTypes { get; } = { "Contains", "Regex" };
 
     [ObservableProperty] private CategoryItem? selected;
@@ -113,8 +123,11 @@ public partial class RulesViewModel : ViewModelBase
         loading = true;
         var keep = Selected?.Name;
         Categories.Clear();
+        SortedCategories.Clear();
         foreach (var c in app.Settings.Categories) Categories.Add(new CategoryItem(c, RemoveRule, Edited));
-        Selected = Categories.FirstOrDefault(c => c.Name == keep) ?? Categories.FirstOrDefault();
+        foreach (var c in Categories.OrderBy(c => c.Name, NameOrder)) SortedCategories.Add(c);
+        UpdatePriorities();
+        Selected = Categories.FirstOrDefault(c => c.Name == keep) ?? SortedCategories.FirstOrDefault();
         loading = false;
         IsEdited = false;
         Problems = "";
@@ -123,9 +136,29 @@ public partial class RulesViewModel : ViewModelBase
         Try();
     }
 
+    private static readonly StringComparer NameOrder = StringComparer.CurrentCultureIgnoreCase;
+
+    // The list on screen follows the names (moving items, so the selection stays)
+    private void Resort()
+    {
+        var wanted = Categories.OrderBy(c => c.Name, NameOrder).ToList();
+        for (int i = 0; i < wanted.Count; i++)
+        {
+            int at = SortedCategories.IndexOf(wanted[i]);
+            if (at < 0) SortedCategories.Insert(i, wanted[i]);
+            else if (at != i) SortedCategories.Move(at, i);
+        }
+    }
+
+    private void UpdatePriorities()
+    {
+        for (int i = 0; i < Categories.Count; i++) Categories[i].Priority = i + 1;
+    }
+
     private void Edited()
     {
         if (loading) return;
+        Resort();
         IsEdited = true;
         Try();
     }
@@ -171,6 +204,8 @@ public partial class RulesViewModel : ViewModelBase
         for (int i = 2; Categories.Any(c => c.Name.Equals(name, StringComparison.OrdinalIgnoreCase)); i++) name = $"New category {i}";
         var item = new CategoryItem(new Category { Name = name, IgnoreCategoryInContent = true, Rules = { new Rule("Contains", "") } }, RemoveRule, Edited);
         Categories.Add(item);
+        Resort();
+        UpdatePriorities();
         Selected = item;
         HasCategories = true;
         Edited();
@@ -180,9 +215,11 @@ public partial class RulesViewModel : ViewModelBase
     private void DeleteCategory()
     {
         if (Selected == null) return;
-        int at = Categories.IndexOf(Selected);
+        int at = SortedCategories.IndexOf(Selected);
         Categories.Remove(Selected);
-        Selected = Categories.Count == 0 ? null : Categories[Math.Min(at, Categories.Count - 1)];
+        SortedCategories.Remove(Selected);
+        UpdatePriorities();
+        Selected = SortedCategories.Count == 0 ? null : SortedCategories[Math.Min(at, SortedCategories.Count - 1)];
         HasCategories = Categories.Count > 0;
         Edited();
     }
@@ -192,7 +229,7 @@ public partial class RulesViewModel : ViewModelBase
     {
         if (Selected == null) return;
         int at = Categories.IndexOf(Selected);
-        if (at > 0) { var s = Selected; Categories.Move(at, at - 1); Selected = s; Edited(); }
+        if (at > 0) { var s = Selected; Categories.Move(at, at - 1); UpdatePriorities(); Selected = s; Edited(); }
     }
 
     [RelayCommand]
@@ -200,7 +237,7 @@ public partial class RulesViewModel : ViewModelBase
     {
         if (Selected == null) return;
         int at = Categories.IndexOf(Selected);
-        if (at < Categories.Count - 1) { var s = Selected; Categories.Move(at, at + 1); Selected = s; Edited(); }
+        if (at < Categories.Count - 1) { var s = Selected; Categories.Move(at, at + 1); UpdatePriorities(); Selected = s; Edited(); }
     }
 
     [RelayCommand]

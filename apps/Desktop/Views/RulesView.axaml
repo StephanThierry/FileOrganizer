@@ -13,7 +13,7 @@
     <StackPanel Grid.Row="0" Margin="0,0,0,12">
       <TextBlock Classes="h1" Text="Rules"/>
       <TextBlock Classes="muted" TextWrapping="Wrap" Margin="0,4,0,0"
-                 Text="A category is a folder. A file goes to the first category in the list that matches: its name, a file name, a tag, or text in the video. Put the most specific categories first."/>
+                 Text="A category is a folder. The list is alphabetical. A file goes to the category with the highest priority (the lowest number) that matches: its name, a file name, a tag, or text in the video. Use Up and Down to give the most specific categories a higher priority."/>
     </StackPanel>
 
     <StackPanel Grid.Row="1" Spacing="10" Margin="0,0,0,12">
@@ -41,21 +41,21 @@
     </Border>
 
     <Grid Grid.Row="2" ColumnDefinitions="320,*" ColumnSpacing="16" IsVisible="{Binding HasCategories}">
-      <!-- The categories, in priority order -->
+      <!-- The categories, alphabetical; the priority (the order the rules are checked in) is shown and changed with Up and Down -->
       <Border Classes="panel" Padding="12">
         <DockPanel>
           <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="6" Margin="0,0,0,10">
             <Button Classes="small" Content="Add" Command="{Binding AddCategoryCommand}"/>
-            <Button Classes="small" Content="Up" Command="{Binding MoveUpCommand}" ToolTip.Tip="Higher in the list: checked earlier"/>
-            <Button Classes="small" Content="Down" Command="{Binding MoveDownCommand}" ToolTip.Tip="Lower in the list: checked later"/>
+            <Button Classes="small" Content="Up" Command="{Binding MoveUpCommand}" ToolTip.Tip="Higher priority: checked earlier (the list stays alphabetical; the priority number changes)"/>
+            <Button Classes="small" Content="Down" Command="{Binding MoveDownCommand}" ToolTip.Tip="Lower priority: checked later (the list stays alphabetical; the priority number changes)"/>
             <Button Classes="small dangerOutline" Content="Delete" Command="{Binding DeleteCategoryCommand}"/>
           </StackPanel>
-          <ListBox Classes="cats" ItemsSource="{Binding Categories}" SelectedItem="{Binding Selected}" Background="Transparent">
+          <ListBox Classes="cats" ItemsSource="{Binding SortedCategories}" SelectedItem="{Binding Selected}" Background="Transparent">
             <ListBox.ItemTemplate>
               <DataTemplate x:DataType="vm:CategoryItem">
                 <StackPanel Spacing="1">
                   <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
-                  <TextBlock Text="{Binding FilesText}" Classes="muted small"/>
+                  <TextBlock Text="{Binding InfoText}" Classes="muted small"/>
                 </StackPanel>
               </DataTemplate>
             </ListBox.ItemTemplate>
