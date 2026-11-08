@@ -117,19 +117,6 @@
         </div>
 
         <aside>
-            <section class="panel scope">
-                <h2>The rules</h2>
-                @if (App.Settings.Categories.Count == 0)
-                {
-                    <p class="muted">No categories yet. Add them under Rules.</p>
-                }
-                else
-                {
-                    <p>@Fmt.Plural(App.Settings.Categories.Count, "category", "categories") with @Fmt.Plural(App.Settings.Categories.Sum(c => c.Rules.Count), "rule", "rules").</p>
-                    <ul class="tags" aria-label="Categories">@foreach (var c in App.Settings.Categories) { <li>@c.Name</li> }</ul>
-                }
-                <p style="margin-top:12px"><button @onclick='() => Nav.NavigateTo("rules")'>Edit the rules</button></p>
-            </section>
             <section class="panel">
                 <h2>Last scan</h2>
                 @if (App.Result is { } last)
