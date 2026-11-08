@@ -127,6 +127,10 @@ public sealed class FileDecision
     public bool Skip { get; set; }
     /// <summary>The file has been moved (or renamed) by the program.</summary>
     public bool Done { get; set; }
+
+    /// <summary>No rule matched it and it has not been moved: it is listed under Unmatched, also while the user has picked a folder for it
+    /// and not moved it yet.</summary>
+    [JsonIgnore] public bool IsUnmatched => Category == null && !Done;
     /// <summary>Where it is now, once Done.</summary>
     public string? MovedTo { get; set; }
 

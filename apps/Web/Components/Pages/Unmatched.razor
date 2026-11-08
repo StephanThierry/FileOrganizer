@@ -50,10 +50,11 @@
                         </div>
                     </div>
                     <div class="un-side">
-                    <select value="@FileDecision.LeaveHere" @onchange="e => Assign(d, e.Value!.ToString()!)" aria-label="Where @d.FileName goes">
+                    <select value="@d.Choice" @onchange="e => Assign(d, e.Value!.ToString()!)" aria-label="Where @d.FileName goes">
                         <option value="@FileDecision.LeaveHere">@FileDecision.LeaveHere</option>
                         @foreach (var c in App.CategoryNames()) { <option value="@c">@c</option> }
                     </select>
+                    <button class="icon" disabled="@(d.EffectiveCategory == null)" @onclick="() => MoveOne(d)" title="Move this file now (to the folder chosen here; nothing is overwritten)" aria-label="Move @d.FileName now"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-8 11v-3H8v-2h4V9l4 4-4 4z" fill="currentColor" /></svg></button>
                     <button class="icon del" @onclick="() => deleting = d" title="Delete the file (asks first)" aria-label="Delete @d.FileName"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill="currentColor" /></svg></button>
                     </div>
                 </div>
@@ -122,7 +123,7 @@
         var decisions = App.Result?.Decisions ?? new List<FileDecision>();
         index = new Dictionary<FileDecision, int>();
         for (int i = 0; i < decisions.Count; i++) index[decisions[i]] = i;
-        rows = decisions.Where(d => d.Category == null && d.OverrideCategory == null).ToList();
+        rows = decisions.Where(d => d.IsUnmatched).ToList();
     }
 
     private void Deleted((bool Ok, string Message) result)
@@ -133,12 +134,20 @@
 
     private int IndexOf(FileDecision d) => index.TryGetValue(d, out var i) ? i : -1;
 
-    // A file given a folder by hand leaves this list and shows up in Review
+    // A folder chosen by hand: the file stays here until the move icon is clicked (it is also listed in Review as waiting to move)
     private void Assign(FileDecision d, string choice)
     {
         d.Choose(choice);
-        Load();
         App.NotifyDecisionsEdited();
+    }
+
+    // The move icon: moves just this file now (nothing is overwritten); it then leaves this list
+    private void MoveOne(FileDecision d)
+    {
+        var report = App.MoveOne(d, alsoRename: false);
+        string text = report.Summary;
+        if (report.Messages.Count > 0) text += " " + string.Join(" ", report.Messages.Take(2));
+        ShowToast(text, report.Messages.Count > 0 ? 10000 : 5000);
     }
 
     private void OpenRule(string text)
