@@ -1,0 +1,49 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:FileOrganizer.Desktop.ViewModels"
+             xmlns:v="using:FileOrganizer.Desktop.Views"
+             x:Class="FileOrganizer.Desktop.Views.RegexGuidePanel"
+             x:DataType="vm:RegexGuideViewModel">
+  <UserControl.Styles>
+    <Style Selector="TextBlock.bad"><Setter Property="Foreground" Value="{DynamicResource Grease}"/></Style>
+  </UserControl.Styles>
+  <!-- The regex guide: the patterns (the ones your rules use first), and a box to try the pattern being edited -->
+  <Border Classes="panel" Padding="16">
+    <DockPanel>
+      <DockPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+        <Button DockPanel.Dock="Right" Classes="small" Content="Close" Command="{Binding CloseCommand}"/>
+        <TextBlock Text="Regex guide" Classes="h2" VerticalAlignment="Center"/>
+      </DockPanel>
+      <!-- Try it: what the pattern selects in any text -->
+      <StackPanel DockPanel.Dock="Bottom" Spacing="6" Margin="0,10,0,0">
+        <TextBlock Text="Try the pattern" FontWeight="SemiBold"/>
+        <TextBlock Classes="muted small" TextWrapping="Wrap" Text="{Binding Pattern, StringFormat='The pattern you are editing: {0}'}"/>
+        <TextBox Text="{Binding Text}" PlaceholderText="Type or paste a file name or some text"/>
+        <Border Background="{DynamicResource Table}" CornerRadius="6" Padding="10,8" MinHeight="40">
+          <v:HighlightedText Pieces="{Binding Pieces}" TextWrapping="Wrap"/>
+        </Border>
+        <TextBlock Text="{Binding Message}" TextWrapping="Wrap" Classes="small" Classes.bad="{Binding Bad}" Classes.muted="{Binding !Bad}"/>
+      </StackPanel>
+      <ScrollViewer Classes="gutter">
+        <StackPanel Spacing="12">
+          <TextBlock Classes="muted small" TextWrapping="Wrap"
+                     Text="A pattern is looked for anywhere in the text, and capitals don't matter. The patterns your rules use today come first, with how many rules use each."/>
+          <ItemsControl ItemsSource="{Binding Tips}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:RegexTipItem">
+                <StackPanel Spacing="2" Margin="0,0,0,10">
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBlock Text="{Binding Pattern}" FontFamily="Consolas,Menlo,monospace" FontWeight="Bold" Foreground="{DynamicResource Accent}"/>
+                    <TextBlock Text="{Binding UsedText}" Classes="muted small" VerticalAlignment="Center" IsVisible="{Binding UsedText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                  </StackPanel>
+                  <TextBlock Text="{Binding Meaning}" TextWrapping="Wrap"/>
+                  <TextBlock Text="{Binding Example}" TextWrapping="Wrap" Classes="muted small" FontFamily="Consolas,Menlo,monospace"/>
+                </StackPanel>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </ScrollViewer>
+    </DockPanel>
+  </Border>
+</UserControl>

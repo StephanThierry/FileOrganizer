@@ -1,0 +1,40 @@
+@* The regex guide: the patterns (the ones your rules use first) and a box that shows what the pattern being edited selects in any text. *@
+@{
+    var (pieces, message) = RegexGuide.Highlight(Value, text);
+}
+<aside class="panel guide" aria-label="Regex guide">
+    <div class="guide-head"><h2>Regex guide</h2><button @onclick="OnClose">Close</button></div>
+    <p class="muted">A pattern is looked for anywhere in the text, and capitals don't matter. The patterns your rules use today come first, with how many rules use each.</p>
+    <div class="guide-tips">
+        @foreach (var t in Tips)
+        {
+            <div class="guide-tip">
+                <div><code class="guide-pattern">@t.Pattern</code>@if (t.UsedBy > 0) { <span class="muted"> used by @Fmt.Plural(t.UsedBy, "rule", "rules")</span> }</div>
+                <div>@t.Meaning</div>
+                <div class="muted guide-example">@t.Example</div>
+            </div>
+        }
+    </div>
+    <div class="guide-try">
+        <h3>Try the pattern</h3>
+        <p class="muted">The pattern you are editing: <code>@Value</code></p>
+        <input type="text" placeholder="Type or paste a file name or some text" @bind="text" @bind:event="oninput" aria-label="Text to test the pattern on" />
+        <div class="guide-result" aria-live="polite">
+            @if (pieces != null) { foreach (var p in pieces) { if (p.IsMatch) { <mark>@p.Text</mark> } else { @p.Text } } }
+            else { @text }
+        </div>
+        <p class="@(pieces == null && !string.IsNullOrEmpty(Value) ? "warn-text" : "muted")">@message</p>
+    </div>
+</aside>
+
+@code {
+    /// <summary>The pattern being edited.</summary>
+    [Parameter, EditorRequired] public string Value { get; set; } = "";
+
+    /// <summary>The patterns to show (RegexGuide.Tips).</summary>
+    [Parameter, EditorRequired] public List<RegexTip> Tips { get; set; } = new();
+
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private string text = "";
+}

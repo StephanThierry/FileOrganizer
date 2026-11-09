@@ -193,7 +193,8 @@ public sealed class OrganizeEngine : IDisposable
                     {
                         // 3. The deep scan: text in the video's frames
                         VideoOcrResult read;
-                        if (cache.TryGetValue(file, out var cached))
+                        // A video that was once found unreadable is tried again: it may have been a false alarm that is fixed since
+                        if (cache.TryGetValue(file, out var cached) && !cached.IsCorrupt)
                         {
                             Say($"[Cache Hit] Using existing OCR data for: {file}");
                             read = cached;
@@ -269,8 +270,12 @@ public sealed class OrganizeEngine : IDisposable
 
         if (d.OcrCorrupt) return Set(d, CorruptCategory, MatchSource.Corrupt, "Hard Error: Video stream unreadable.");
 
-        foreach (var line in d.OcrLines)
-            if (RuleMatcher.Match(line, settings) is { } o) return Set(d, o.Category, MatchSource.Ocr, $"OCR Match: '{o.Trigger}'");
+        // The text read from the video, and the rules with several terms ("All of"), which look at everything known about the file
+        var texts = new List<string> { d.FileName, d.Title, d.Comment };
+        texts.AddRange(d.OcrLines);
+        if (RuleMatcher.MatchVideo(d.OcrLines, texts, settings) is { } o)
+            return Set(d, o.Category, o.IsAll && d.OcrLines.Count == 0 ? MatchSource.Filename : MatchSource.Ocr,
+                o.IsAll && d.OcrLines.Count == 0 ? o.Trigger : $"OCR Match: '{o.Trigger}'");
 
         return false;
     }

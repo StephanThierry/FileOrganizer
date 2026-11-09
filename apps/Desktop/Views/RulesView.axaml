@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:FileOrganizer.Desktop.ViewModels"
+             xmlns:v="using:FileOrganizer.Desktop.Views"
              x:Class="FileOrganizer.Desktop.Views.RulesView"
              x:DataType="vm:RulesViewModel">
   <UserControl.Styles>
@@ -40,7 +41,7 @@
       </StackPanel>
     </Border>
 
-    <Grid Grid.Row="2" ColumnDefinitions="320,*" ColumnSpacing="16" IsVisible="{Binding HasCategories}">
+    <Grid Grid.Row="2" ColumnDefinitions="260,*" ColumnSpacing="16" IsVisible="{Binding HasCategories}">
       <!-- The categories, alphabetical; the priority (the order the rules are checked in) is shown and changed with Up and Down -->
       <Border Classes="panel" Padding="12">
         <DockPanel>
@@ -64,7 +65,8 @@
       </Border>
 
       <!-- The selected category -->
-      <ScrollViewer Grid.Column="1" Classes="gutter" IsVisible="{Binding HasSelected}">
+      <Grid Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="16" IsVisible="{Binding HasSelected}">
+      <ScrollViewer Classes="gutter">
         <Border Classes="panel" DataContext="{Binding Selected}" x:DataType="vm:CategoryItem">
           <StackPanel Spacing="16">
             <StackPanel Spacing="4">
@@ -80,11 +82,28 @@
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="vm:RuleItem">
                     <StackPanel Spacing="2" Margin="0,0,0,8">
-                      <Grid ColumnDefinitions="130,*,Auto" ColumnSpacing="8">
+                      <Grid ColumnDefinitions="130,*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="6">
                         <ComboBox ItemsSource="{Binding Types}" SelectedItem="{Binding Type}" HorizontalAlignment="Stretch"/>
-                        <TextBox Grid.Column="1" Text="{Binding Value}" PlaceholderText="Text, or a regular expression"/>
                         <Button Grid.Column="2" Content="Remove" Command="{Binding RemoveCommand}" Classes="small dangerOutline" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="1" Grid.ColumnSpan="3" Text="{Binding Value}" PlaceholderText="Text, or a regular expression" GotFocus="RuleGotFocus" IsVisible="{Binding IsSingle}"/>
                       </Grid>
+                      <!-- A rule with several terms: all of them must be found (in the file name, a tag or the video text, each in any of them) -->
+                      <StackPanel IsVisible="{Binding IsAll}" Spacing="6" Margin="14,4,0,0">
+                        <TextBlock Classes="muted small" TextWrapping="Wrap"
+                                   Text="Every term below must be found somewhere in the file: its name, a tag or the text read from the video (each in any of them, not in the same place)."/>
+                        <ItemsControl ItemsSource="{Binding Terms}">
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:TermItem">
+                              <Grid ColumnDefinitions="110,*,Auto" ColumnSpacing="8" Margin="0,0,0,6">
+                                <ComboBox ItemsSource="{Binding Types}" SelectedItem="{Binding Type}" HorizontalAlignment="Stretch"/>
+                                <TextBox Grid.Column="1" Text="{Binding Value}" PlaceholderText="Text, or a regular expression" GotFocus="TermGotFocus"/>
+                                <Button Grid.Column="2" Content="Remove" Command="{Binding RemoveCommand}" Classes="small dangerOutline" VerticalAlignment="Center"/>
+                              </Grid>
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <Button Content="Add a term" Command="{Binding AddTermCommand}" Classes="small" HorizontalAlignment="Left"/>
+                      </StackPanel>
                       <TextBlock Text="{Binding Error}" IsVisible="{Binding HasError}" Classes="bad small"/>
                     </StackPanel>
                   </DataTemplate>
@@ -92,11 +111,15 @@
               </ItemsControl>
               <Button Content="Add a rule" HorizontalAlignment="Left" Command="{Binding AddRuleCommand}"/>
               <TextBlock Classes="muted small" TextWrapping="Wrap"
-                         Text="Contains: the text anywhere (capitals don't matter). Regex: a pattern, e.g. ^Barry.*\.mp4$ or S\d\dE\d\d."/>
+                         Text="Contains: the text anywhere (capitals don't matter). Regex: a pattern, e.g. ^Barry.*\.mp4$ or S\d\dE\d\d. All of: several terms (each Contains or Regex) that must all be found, e.g. R.?C and hub and community."/>
             </StackPanel>
           </StackPanel>
         </Border>
       </ScrollViewer>
+
+      <!-- The regex guide: beside the rule being edited, while a Regex rule is in use -->
+      <v:RegexGuidePanel Grid.Column="1" Width="360" DataContext="{Binding Guide}" x:DataType="vm:RegexGuideViewModel" IsVisible="{Binding IsVisible}"/>
+    </Grid>
     </Grid>
 
     <Border Grid.Row="3" Background="{DynamicResource Sheet}" BorderBrush="{DynamicResource Rule}" BorderThickness="0,1,0,0" Padding="16,12" Margin="-12,12,-12,0" IsVisible="{Binding HasCategories}">

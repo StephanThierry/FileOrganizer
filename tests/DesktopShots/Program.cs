@@ -91,9 +91,46 @@ void WaitFor(Func<bool> condition, int seconds, string what)
 
 // --- The screens ---
 vm.SelectedTab = MainViewModel.RulesTab; vm.Rules.TryText = "Season S02E05 of the show"; Pump(500); Shot("o_rules");
+// The regex guide: opens beside a Regex rule, with a test text
+vm.Rules.Selected = vm.Rules.Categories.First(c => c.Name == "Series");
+vm.Rules.Selected.Rules[0].Activate(); vm.Rules.Guide.Text = "Show S01E07 and s12e10 but not S1E2"; Pump(500); Shot("o_rules_guide");
+vm.Rules.Guide.Close();
+// A rule with several terms: each Contains or Regex
+var allRule = vm.Rules.Selected!.Rules[0];
+allRule.Type = RuleItem.AllLabel;
+allRule.Terms[0].Type = "Regex"; allRule.Terms[0].Value = "R.?C";
+allRule.Terms[1].Value = "hub";
+allRule.AddTermCommand.Execute(null); allRule.Terms[2].Value = "community";
+allRule.Terms[0].Activate(); vm.Rules.Guide.Text = "REC and R3C and RC but not RXXC"; vm.Rules.TryText = "REC hub community"; Pump(500); Shot("o_rules_allof");
+vm.Rules.Guide.Close();
 vm.SelectedTab = MainViewModel.SettingsTab; Pump(300); Shot("o_settings");
 vm.SelectedTab = MainViewModel.ScanTab; Pump(300); Shot("o_scan_idle");
 
+// The Unmatched screen with made-up findings (no videos needed): the "make a rule" dialog with the regex guide to its right
+{
+    var fake = new OrganizeResult { Folder = files, Decisions = { new FileDecision { FileName = "summer clip.mp4", IsVideo = true, OcrLines = { "REC", "hub", "my own summer", "Ppp.tV", "p-p-p.tv", "P-p-p.tv", "P-pp.t", "P-P-p.tv", "Pp-p.t", "Pp-p.tv", "P-P-P.TV", "P-P-PTV", "P-P-P. TV" } } } };
+    typeof(AppController).GetProperty("Result")!.SetValue(app, fake);
+    vm.SelectedTab = MainViewModel.UnmatchedTab; vm.Unmatched.Reload(); Pump(600);
+    var row = vm.Unmatched.Rows[0];
+    row.Lines[0].IsSelected = true; row.Lines[1].IsSelected = true; Pump(300); Shot("o_unmatched_ticked");
+    row.MakeAllRuleCommand.Execute(null);
+    vm.Unmatched.RuleTerms[0].Type = "Regex"; vm.Unmatched.RuleTerms[0].Value = "R.?C"; vm.Unmatched.Guide.Text = "REC and R3C and RC but not RXXC"; Pump(500); Shot("o_dialog_allof_guide");
+    vm.Unmatched.CancelRuleCommand.Execute(null);
+    row.Lines[2].Command.Execute(null); vm.Unmatched.RuleType = "Regex"; vm.Unmatched.RuleText = "my.?own"; vm.Unmatched.Guide.Text = "my own summer"; Pump(500); Shot("o_dialog_regex_guide");
+    vm.Unmatched.CancelRuleCommand.Execute(null);
+    // The text read in many ways: one tag, all the readings in the dialog with what a rule would catch
+    var logo = row.Lines.First(l => l.HasVariants && l.Text.Contains("p", StringComparison.OrdinalIgnoreCase) && l.Variants.Count > 3);
+    Console.WriteLine("logo tag: " + logo.Text + " | " + logo.VariantsBadge);
+    Shot("o_unmatched_variants");
+    logo.Command.Execute(null);
+    vm.Unmatched.RuleType = "Regex"; vm.Unmatched.RuleText = "p.?p.?p.?tv"; Pump(500); Shot("o_dialog_variants_regex");
+    Console.WriteLine("summary: " + vm.Unmatched.VariantSummary);
+    vm.Unmatched.RuleType = "Contains"; vm.Unmatched.RuleText = "p-p-p.tv"; Pump(500); Shot("o_dialog_variants_contains");
+    Console.WriteLine("summary: " + vm.Unmatched.VariantSummary);
+    vm.Unmatched.CancelRuleCommand.Execute(null);
+    typeof(AppController).GetProperty("Result")!.SetValue(app, null);
+    vm.Unmatched.Reload();
+}
 if (ffmpegFolder != null && modelsSource != null)
 {
     vm.Scan.StartCommand.Execute(null);
