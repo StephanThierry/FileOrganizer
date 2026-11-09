@@ -103,9 +103,10 @@ public sealed class OpenCvVideoOcr : IVideoOcr, IDisposable
         // Kept outside the try below, so a model problem stops the run instead of marking every video as corrupt
         reader ??= new VideoTextReader(modelsFolder);
 
+        string? tempCopy = null;
         try
         {
-            using var capture = new VideoCapture(path, VideoCaptureAPIs.FFMPEG);
+            using var capture = OpenVideo(path, ct, out tempCopy);
             if (!capture.IsOpened()) { result.IsCorrupt = true; return result; }
 
             double fps = capture.Fps;
@@ -149,7 +150,67 @@ public sealed class OpenCvVideoOcr : IVideoOcr, IDisposable
         {
             result.IsCorrupt = true;
         }
+        finally
+        {
+            if (tempCopy != null) { try { File.Delete(tempCopy); } catch (Exception) { } }
+        }
         return result;
+    }
+
+    /// <summary>
+    /// Opens a video. OpenCV's ffmpeg on Windows cannot open a path with letters outside plain ASCII (a Cyrillic or accented
+    /// letter, an emoji): it says the file can't be opened although the file is fine. For such a file a copy with a plain name is
+    /// made in the temp folder and opened instead (<paramref name="tempCopy"/>: delete it afterwards).
+    /// </summary>
+    private static VideoCapture OpenVideo(string path, CancellationToken ct, out string? tempCopy)
+    {
+        tempCopy = null;
+        var capture = new VideoCapture(path, VideoCaptureAPIs.FFMPEG);
+        if (capture.IsOpened() || !OperatingSystem.IsWindows() || path.All(c => c < 128)) return capture;
+
+        tempCopy = CopyToPlainName(path, ct);
+        if (tempCopy == null) return capture;   // no room for a copy: the video stays unreadable
+        capture.Dispose();
+        return new VideoCapture(tempCopy, VideoCaptureAPIs.FFMPEG);
+    }
+
+    /// <summary>A copy of the file in the temp folder under a plain ASCII name (null: there is no room for it, or it can't be copied).</summary>
+    private static string? CopyToPlainName(string path, CancellationToken ct)
+    {
+        string? target = null;
+        try
+        {
+            var info = new FileInfo(path);
+            string temp = Path.GetTempPath();
+            var drive = new DriveInfo(Path.GetPathRoot(Path.GetFullPath(temp))!);
+            if (drive.AvailableFreeSpace < info.Length + 512L * 1024 * 1024) return null;   // keep half a GB free
+
+            string ext = info.Extension;
+            if (ext.Length == 0 || ext.Any(c => c >= 128)) ext = ".video";
+            target = Path.Combine(temp, "FileOrganizer_" + Guid.NewGuid().ToString("N") + ext);
+            using (var source = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 1 << 20))
+            using (var destination = new FileStream(target, FileMode.CreateNew, FileAccess.Write, FileShare.None, 1 << 20))
+            {
+                var buffer = new byte[1 << 20];
+                int read;
+                while ((read = source.Read(buffer, 0, buffer.Length)) > 0)
+                {
+                    ct.ThrowIfCancellationRequested();
+                    destination.Write(buffer, 0, read);
+                }
+            }
+            return target;
+        }
+        catch (OperationCanceledException)
+        {
+            if (target != null) { try { File.Delete(target); } catch (Exception) { } }
+            throw;
+        }
+        catch (Exception)
+        {
+            if (target != null) { try { File.Delete(target); } catch (Exception) { } }
+            return null;
+        }
     }
 
     /// <summary>
@@ -179,9 +240,70 @@ public sealed class OpenCvVideoOcr : IVideoOcr, IDisposable
     public void Dispose() => reader?.Dispose();
 }
 
+/// <summary>One way a piece of text was read from a video (capitals do not count as a difference), and how many times.</summary>
+public sealed record OcrVariant(string Text, int Count);
+
+/// <summary>
+/// One piece of text on screen as the OCR read it in different frames: the readings differ a little (P-P-P.TV, Ppp.tV, p-p-p.tv).
+/// <paramref name="Best"/> is the most complete reading; <paramref name="Variants"/> are all the different readings, the most seen first.
+/// </summary>
+public sealed record OcrFinding(string Best, IReadOnlyList<OcrVariant> Variants);
+
 /// <summary>Tidying the text found in a video before it is shown (matching still uses every line that was read).</summary>
 public static class OcrText
 {
+    private sealed class Group
+    {
+        public string Key = "";
+        public readonly List<string> Lines = new();
+    }
+
+    /// <summary>
+    /// The pieces of text found in a video, each with every different reading of it. Readings that are the same apart from case,
+    /// spacing and punctuation belong together, and so does a reading that is only a piece of a longer one (cut off). The pieces
+    /// are in the order they were first seen. Text without a single letter or digit is left out.
+    /// </summary>
+    public static List<OcrFinding> Findings(IEnumerable<string> lines)
+    {
+        var groups = new List<Group>();
+        foreach (var raw in lines)
+        {
+            string line = (raw ?? "").Trim();
+            string key = Key(line);
+            if (key.Length == 0) continue;
+
+            var into = groups.FirstOrDefault(g => g.Key.Contains(key, StringComparison.Ordinal));   // the same text, or a piece of a longer one
+            if (into != null) { into.Lines.Add(line); continue; }
+
+            // A longer reading takes over the shorter pieces of itself, at the place of the first of them
+            var pieces = groups.Where(g => key.Contains(g.Key, StringComparison.Ordinal)).ToList();
+            var group = new Group { Key = key };
+            int at = groups.Count;
+            if (pieces.Count > 0)
+            {
+                at = groups.IndexOf(pieces[0]);
+                foreach (var piece in pieces) group.Lines.AddRange(piece.Lines);
+                groups.RemoveAll(g => pieces.Contains(g));
+            }
+            group.Lines.Add(line);
+            groups.Insert(Math.Min(at, groups.Count), group);
+        }
+
+        return groups.Select(g =>
+        {
+            // Different readings: the same text in other capitals is one reading, shown as it was seen most often
+            var variants = g.Lines.Select((text, i) => (text, i)).GroupBy(x => x.text.ToLowerInvariant())
+                .Select(x => (Text: x.GroupBy(y => y.text).OrderByDescending(y => y.Count()).ThenBy(y => y.First().i).First().Key,
+                              Count: x.Count(), First: x.Min(y => y.i), KeyLength: Key(x.Key).Length))
+                .ToList();
+            // The most complete reading: the most letters and digits, then the most often seen, then the one with most punctuation
+            var best = variants.OrderByDescending(v => v.KeyLength).ThenByDescending(v => v.Count).ThenByDescending(v => v.Text.Length).ThenBy(v => v.First).First();
+            var ordered = variants.OrderByDescending(v => v.Count).ThenByDescending(v => v.KeyLength).ThenByDescending(v => v.Text.Length).ThenBy(v => v.First)
+                .Select(v => new OcrVariant(v.Text, v.Count)).ToList();
+            return new OcrFinding(best.Text, ordered);
+        }).ToList();
+    }
+
     private static string Key(string line) => new string(line.Where(char.IsLetterOrDigit).Select(char.ToLowerInvariant).ToArray());
 
     /// <summary>

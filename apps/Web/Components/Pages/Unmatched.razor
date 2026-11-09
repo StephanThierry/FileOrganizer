@@ -43,11 +43,19 @@
                     <div class="info">
                         <div class="name">@d.FileName</div>
                         <div class="chips">
-                            @if (d.Title.Length > 0) { <button class="chip btn" @onclick="() => OpenRule(d.Title)"><small>Title tag</small>@d.Title</button> }
-                            @if (d.Comment.Length > 0) { <button class="chip btn" @onclick="() => OpenRule(d.Comment)"><small>Comment tag</small>@d.Comment</button> }
-                            @foreach (var line in OcrText.Distinct(d.OcrLines).Where(l => l.Any(char.IsLetter))) { <button class="chip btn" @onclick="() => OpenRule(line)">@line</button> }
+                            @if (d.Title.Length > 0) { <span class="chip-wrap">@Tick(d, d.Title)<button class="chip btn" @onclick="() => OpenRule(d.Title, null)"><small>Title tag</small>@d.Title</button></span> }
+                            @if (d.Comment.Length > 0) { <span class="chip-wrap">@Tick(d, d.Comment)<button class="chip btn" @onclick="() => OpenRule(d.Comment, null)"><small>Comment tag</small>@d.Comment</button></span> }
+                            @* One tag per text on screen, however many different ways the frames read it: all the readings are kept, to choose a rule from *@
+                            @foreach (var f in OcrText.Findings(d.OcrLines).Where(f => f.Best.Any(char.IsLetter)))
+                            {
+                                <span class="chip-wrap">@Tick(d, f.Best)<button class="chip btn" title="@VariantsTip(f)" @onclick="() => OpenRule(f.Best, f.Variants)">@(f.Best)@if (f.Variants.Count > 1) { <small class="muted"> @f.Variants.Count variants</small> }</button></span>
+                            }
                             @if (d.OcrCorrupt) { <span class="muted">The video can't be read.</span> }
                         </div>
+                        @if (Ticked(d).Count >= 2)
+                        {
+                            <div class="un-all"><button @onclick="() => OpenAllRule(d)">Make one rule from the @Ticked(d).Count ticked texts (all must be found)</button></div>
+                        }
                     </div>
                     <div class="un-side">
                     <select value="@d.Choice" @onchange="e => Assign(d, e.Value!.ToString()!)" aria-label="Where @d.FileName goes">
@@ -70,18 +78,52 @@
 @if (ruleOpen)
 {
     <div class="dialog-backdrop" @onclick="() => ruleOpen = false">
-        <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="rule-title" @onclick:stopPropagation="true">
+        <div class="dialog-row" @onclick:stopPropagation="true">
+        <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="rule-title">
             <h2 id="rule-title">Make a rule</h2>
             <div class="rule-line" style="margin-top:14px">
-                <select @bind="ruleType" @bind:after="Preview" aria-label="Rule type"><option>Contains</option><option>Regex</option></select>
-                <input type="text" @bind="ruleText" @bind:event="oninput" @bind:after="Preview" aria-label="Text to look for" />
+                <select @bind="ruleType" @bind:after="TypeChanged" aria-label="Rule type"><option value="Contains">Contains</option><option value="Regex">Regex</option><option value="All">All of</option></select>
+                @if (ruleType == "All") { <span class="muted">All of these must be found in the file. Each is text or a pattern (R.?C finds REC, R3C and RC).</span> }
+                else { <input type="text" @bind="ruleText" @bind:event="oninput" @bind:after="Preview" @onfocus="ShowGuideIfRegex" aria-label="Text to look for" /> }
                 <span></span>
             </div>
+            @if (ruleType == "All")
+            {
+                @foreach (var t in ruleTerms.ToList())
+                {
+                    <div class="rule-line" @key="t">
+                        <select @bind="t.Type" @bind:after="() => { Preview(); ActivateTerm(t); }" aria-label="Term type"><option value="Contains">Contains</option><option value="Regex">Regex</option></select>
+                        <input type="text" @bind="t.Value" @bind:event="oninput" @bind:after="Preview" @onfocus="() => ActivateTerm(t)" aria-label="Term text" />
+                        <button @onclick="() => { ruleTerms.Remove(t); Preview(); }" aria-label="Remove term">Remove</button>
+                    </div>
+                }
+                <p><button @onclick="() => { ruleTerms.Add(new RuleTerm()); Preview(); }">Add a term</button></p>
+            }
+            @if (ShowVariants)
+            {
+                @* Every different way the text was read: which of them would the rule catch? Click one to use it as the text. *@
+                <div class="variants">
+                    <strong>Read in the video as</strong>
+                    <div class="variant-list">
+                        @foreach (var v in ruleVariants)
+                        {
+                            bool hit = Caught(v);
+                            <div class="variant">
+                                <span class="@(hit ? "ok-text" : "warn-text")" aria-label="@(hit ? "caught by the rule" : "not caught by the rule")">@(hit ? "\u2713" : "\u2717")</span>
+                                <button class="chip btn" disabled="@(ruleType == "All")" title="Use this reading as the text of the rule" @onclick="() => UseVariant(v)">@v.Text</button>
+                                @if (v.Count > 1) { <span class="muted">@(v.Count)x</span> }
+                            </div>
+                        }
+                    </div>
+                    <p class="muted">@VariantSummary()</p>
+                </div>
+            }
             <div class="rule-line">
-                <select @bind="ruleCategory" @bind:after="Preview" aria-label="Category">
+                <select @bind="ruleCategory" @bind:after="PickCategory" aria-label="Category">
+                    <option value="@NewChoice">+ A new category (type its name below)</option>
                     @foreach (var c in App.CategoryNames()) { <option value="@c">@c</option> }
                 </select>
-                <input type="text" placeholder="or a new category" @bind="newCategory" @bind:event="oninput" @bind:after="Preview" aria-label="New category" />
+                <input type="text" placeholder="Name of the new category (a new folder)" @bind="newCategory" @bind:event="oninput" @bind:after="TypeCategory" aria-label="New category" />
                 <span></span>
             </div>
             <p class="@(previewBad ? "warn-text" : "")" aria-live="polite">@preview</p>
@@ -89,6 +131,11 @@
                 <button @onclick="() => ruleOpen = false">Cancel</button>
                 <button class="primary" disabled="@(!canAdd)" @onclick="AddRule">Add the rule</button>
             </div>
+        </div>
+        @if (GuideVisible)
+        {
+            <RegexGuidePanel Value="@GuideValue" Tips="guideTips" OnClose="() => guideDismissed = true" />
+        }
         </div>
     </div>
 }
@@ -150,38 +197,158 @@
         ShowToast(text, report.Messages.Count > 0 ? 10000 : 5000);
     }
 
-    private void OpenRule(string text)
+    // The texts ticked per file, for one rule that needs all of them
+    private readonly Dictionary<FileDecision, HashSet<string>> ticked = new();
+    private List<RuleTerm> ruleTerms = new();
+
+    private HashSet<string> Ticked(FileDecision d) => ticked.TryGetValue(d, out var set) ? set : new();
+
+    private Microsoft.AspNetCore.Components.RenderFragment Tick(FileDecision d, string text) => builder =>
     {
-        ruleText = text;
-        ruleType = "Contains";
+        builder.OpenElement(0, "input");
+        builder.AddAttribute(1, "type", "checkbox");
+        builder.AddAttribute(2, "checked", Ticked(d).Contains(text));
+        builder.AddAttribute(3, "title", "Tick this text, and another one, to make one rule that needs all of them");
+        builder.AddAttribute(4, "aria-label", "Tick " + text);
+        builder.AddAttribute(5, "onchange", Microsoft.AspNetCore.Components.EventCallback.Factory.Create<Microsoft.AspNetCore.Components.ChangeEventArgs>(this, e =>
+        {
+            if (!ticked.TryGetValue(d, out var set)) ticked[d] = set = new();
+            if (e.Value is true) set.Add(text); else set.Remove(text);
+        }));
+        builder.CloseElement();
+    };
+
+    // The different readings of the text(s) the rule is made from (the same text in other capitals counts once)
+    private List<OcrVariant> ruleVariants = new();
+    private bool ShowVariants => ruleType == "All" ? ruleVariants.Count > 0 : ruleVariants.Count > 1;
+
+    private void SetVariants(IEnumerable<OcrVariant> variants) =>
+        ruleVariants = variants.GroupBy(v => v.Text, StringComparer.OrdinalIgnoreCase).Select(g => g.First()).ToList();
+
+    private static string VariantsTip(OcrFinding f) =>
+        "Read as:\n" + string.Join("\n", f.Variants.Select(v => v.Count > 1 ? $"{v.Text}   ({v.Count}x)" : v.Text)) + "\n\nClick to see which rule fits them all.";
+
+    private IReadOnlyList<OcrVariant> VariantsFor(FileDecision d, string text) =>
+        OcrText.Findings(d.OcrLines).FirstOrDefault(f => f.Best == text)?.Variants ?? new[] { new OcrVariant(text, 1) };
+
+    private Rule CurrentRule() => ruleType == "All" ? Rule.AllOf(ruleTerms) : new Rule(ruleType, ruleText.Trim());
+
+    // Would the rule being made catch this reading? (A rule with several terms: would one of its terms.)
+    private bool Caught(OcrVariant v)
+    {
+        var rule = CurrentRule();
+        if (RuleMatcher.Validate(rule) != null) return false;
+        if (ruleType == "All") return ruleTerms.Any(t => RuleMatcher.AllOfMatches(Rule.AllOf(new[] { t }), new[] { v.Text }));
+        return RuleMatcher.Match(v.Text, new Settings { Categories = { new Category { Name = "x", IgnoreCategoryInContent = true, Rules = { rule } } } }) != null;
+    }
+
+    private string VariantSummary()
+    {
+        if (RuleMatcher.Validate(CurrentRule()) != null) return "";
+        int caught = ruleVariants.Count(Caught);
+        return ruleType == "All" ? $"The terms catch {caught} of the {ruleVariants.Count} readings." : $"This rule catches {caught} of the {ruleVariants.Count} readings.";
+    }
+
+    private void UseVariant(OcrVariant v)
+    {
+        if (ruleType == "All") return;
+        ruleText = v.Text;
+        Preview();
+    }
+
+    private void OpenAllRule(FileDecision d)
+    {
+        guideTerm = null; guideDismissed = false;
+        SetVariants(Ticked(d).SelectMany(t => VariantsFor(d, t)));
+        ruleTerms = Ticked(d).Select(t => new RuleTerm("Contains", t)).ToList();
+        ruleText = "";
+        ruleType = "All";
         newCategory = "";
-        ruleCategory = App.CategoryNames().FirstOrDefault() ?? "";
+        ruleCategory = App.CategoryNames().FirstOrDefault() ?? NewChoice;
         ruleOpen = true;
         Preview();
     }
 
-    private string Category => newCategory.Trim().Length > 0 ? newCategory.Trim() : ruleCategory;
+    // Becoming a rule with several terms: the text so far is the first term, and there is room for a second
+    private void TypeChanged()
+    {
+        if (ruleType == "All" && ruleTerms.Count == 0) ruleTerms = new() { new RuleTerm("Contains", ruleText.Trim()), new RuleTerm("Contains", "") };
+        guideTerm = null;
+        if (ruleType == "Regex") ShowGuide();
+        Preview();
+    }
+
+    // The regex guide, to the right of the dialog while a pattern is being made: for the text of a Regex rule, or for a Regex term of "All of"
+    private List<RegexTip> guideTips = new();
+    private RuleTerm? guideTerm;
+    private bool guideDismissed;
+    private bool GuideVisible => ruleOpen && !guideDismissed && (ruleType == "Regex" || (ruleType == "All" && guideTerm != null && ruleTerms.Contains(guideTerm)));
+    private string GuideValue => ruleType == "Regex" ? ruleText : guideTerm?.Value ?? "";
+
+    private void ShowGuide()
+    {
+        guideDismissed = false;
+        guideTips = RegexGuide.Tips(App.Settings);
+    }
+
+    private void ShowGuideIfRegex() { if (ruleType == "Regex" && !GuideVisible) ShowGuide(); }
+
+    private void ActivateTerm(RuleTerm t)
+    {
+        if (!t.IsRegex) return;
+        guideTerm = t;
+        if (!GuideVisible) ShowGuide();
+    }
+
+    private void OpenRule(string text, IReadOnlyList<OcrVariant>? variants)
+    {
+        guideTerm = null; guideDismissed = false;
+        SetVariants(variants ?? new[] { new OcrVariant(text, 1) });
+        ruleTerms = new();
+        ruleText = text;
+        ruleType = "Contains";
+        newCategory = "";
+        ruleCategory = App.CategoryNames().FirstOrDefault() ?? NewChoice;   // the first category, or "a new category" when there is none
+        ruleOpen = true;
+        Preview();
+    }
+
+    // The first entry of the list: the rule goes to a new category, named in the box below the list
+    private const string NewChoice = "@@new-category@@";
+    private bool IsNew => ruleCategory == NewChoice;
+    private string Category => IsNew ? newCategory.Trim() : ruleCategory;
+
+    // An existing category was chosen: the typed name is forgotten
+    private void PickCategory() { if (!IsNew) newCategory = ""; Preview(); }
+
+    // Typing a name means "a new category"
+    private void TypeCategory() { if (newCategory.Trim().Length > 0) ruleCategory = NewChoice; Preview(); }
 
     // How many of the files here would this rule catch?
     private void Preview()
     {
         string text = ruleText.Trim(), category = Category;
-        var rule = new Rule(ruleType, text);
+        var rule = ruleType == "All" ? Rule.AllOf(ruleTerms) : new Rule(ruleType, text);
         var error = RuleMatcher.Validate(rule);
         previewBad = error != null;
         canAdd = error == null && category.Length > 0 && FolderNames.IsSafe(category);
-        if (error != null) { preview = text.Length == 0 ? "Type the text to look for." : error[..1].ToUpper() + error[1..]; return; }
+        if (error != null) { preview = ruleType != "All" && text.Length == 0 ? "Type the text to look for." : error[..1].ToUpper() + error[1..]; return; }
         var trial = new Settings { Categories = { new Category { Name = "x", IgnoreCategoryInContent = true, Rules = { rule } } } };
-        int hits = rows.Count(d => RuleMatcher.Match(d.FileName, trial) != null || RuleMatcher.Match(d.Title, trial) != null
-            || RuleMatcher.Match(d.Comment, trial) != null || d.OcrLines.Any(l => RuleMatcher.Match(l, trial) != null));
-        preview = category.Length == 0 ? "Choose a category, or name a new one."
+        // A rule with several terms looks at everything known about the file together; the others at one text at a time
+        int hits = rows.Count(d => ruleType == "All"
+            ? RuleMatcher.AllOfMatches(rule, new[] { d.FileName, d.Title, d.Comment }.Concat(d.OcrLines).ToList())
+            : RuleMatcher.Match(d.FileName, trial) != null || RuleMatcher.Match(d.Title, trial) != null
+              || RuleMatcher.Match(d.Comment, trial) != null || d.OcrLines.Any(l => RuleMatcher.Match(l, trial) != null));
+        preview = category.Length == 0 ? (IsNew ? "Type the name of the new category (a new folder) in the box below the list." : "Choose a category, or name a new one.")
             : !FolderNames.IsSafe(category) ? $"\"{category}\" can't be a folder name."
-            : $"Would match {hits:N0} of the {rows.Count:N0} files here, and send them to {category}{(newCategory.Trim().Length > 0 ? " (a new category)" : "")}.";
+            : $"Would match {hits:N0} of the {rows.Count:N0} files here, and send them to {category}{(IsNew ? " (a new category)" : "")}.";
     }
 
     private void AddRule()
     {
-        string message = App.AddRule(Category, ruleType, ruleText, out bool ok);
+        string message = ruleType == "All"
+            ? App.AddAllRule(Category, ruleTerms, out bool ok)
+            : App.AddRule(Category, ruleType, ruleText, out ok);
         ShowToast(message, ok ? 5000 : 9000);
         if (ok) ruleOpen = false;
     }

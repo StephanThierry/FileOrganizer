@@ -156,7 +156,20 @@ public sealed class AppController : IDisposable
         value = (value ?? "").Trim();
         if (category.Length == 0) return "Choose a category, or type the name of a new one.";
         if (!FolderNames.IsSafe(category)) return $"\"{category}\" can't be a folder name.";
-        var rule = new Rule(type.Equals("Regex", StringComparison.OrdinalIgnoreCase) ? "Regex" : "Contains", value);
+        return AddRule(category, new Rule(type.Equals("Regex", StringComparison.OrdinalIgnoreCase) ? "Regex" : "Contains", value), out ok);
+    }
+
+    /// <summary>The same, for a rule with several terms that all have to be found ("All of").</summary>
+    public string AddAllRule(string category, IEnumerable<RuleTerm> terms, out bool ok) =>
+        AddRule(category, Rule.AllOf(terms.Select(t => new RuleTerm(t.IsRegex ? "Regex" : "Contains", (t.Value ?? "").Trim()))), out ok);
+
+    private string AddRule(string category, Rule rule, out bool ok)
+    {
+        ok = false;
+        category = (category ?? "").Trim();
+        if (category.Length == 0) return "Choose a category, or type the name of a new one.";
+        if (!FolderNames.IsSafe(category)) return $"\"{category}\" can't be a folder name.";
+        string value = rule.Describe();
         var error = RuleMatcher.Validate(rule);
         if (error != null) return error[..1].ToUpper() + error[1..];
 
@@ -168,7 +181,7 @@ public sealed class AppController : IDisposable
             existing = new Category { Name = category, IgnoreCategoryInContent = true };
             settings.Categories.Add(existing);
         }
-        if (existing.Rules.Any(r => r.Type == rule.Type && r.Value.Equals(rule.Value, StringComparison.OrdinalIgnoreCase)))
+        if (existing.Rules.Any(r => r.SameAs(rule)))
             return $"{existing.Name} has that rule already.";
         existing.Rules.Add(rule);
 

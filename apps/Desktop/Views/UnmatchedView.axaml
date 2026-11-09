@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:FileOrganizer.Desktop.ViewModels"
+             xmlns:v="using:FileOrganizer.Desktop.Views"
              x:Class="FileOrganizer.Desktop.Views.UnmatchedView"
              x:DataType="vm:UnmatchedViewModel">
   <UserControl.Styles>
@@ -13,6 +14,7 @@
       <Setter Property="Background" Value="{DynamicResource Raised}"/><Setter Property="Margin" Value="0,0,6,6"/><Setter Property="Cursor" Value="Hand"/></Style>
     <Style Selector="Button.chip:pointerover /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="Background" Value="{DynamicResource AccentWash}"/></Style>
     <Style Selector="TextBlock.bad"><Setter Property="Foreground" Value="{DynamicResource Grease}"/></Style>
+    <Style Selector="TextBlock.ok"><Setter Property="Foreground" Value="{DynamicResource Keep}"/></Style>
     <Style Selector="Image.thumb"><Setter Property="Width" Value="192"/><Setter Property="Height" Value="108"/></Style>
     <Style Selector="Button.icon.del"><Setter Property="Foreground" Value="{DynamicResource Grease}"/></Style>
     <Style Selector="Button.icon.del:pointerover /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="Foreground" Value="{DynamicResource GreaseHover}"/><Setter Property="Background" Value="{DynamicResource GreaseWash}"/></Style>
@@ -76,15 +78,22 @@
                     <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                       <DataTemplate x:DataType="vm:TextLine">
-                        <Button Classes="chip" Command="{Binding Command}" ToolTip.Tip="Make a rule from this text">
-                          <StackPanel Orientation="Horizontal" Spacing="6">
-                            <TextBlock Text="{Binding Label}" FontWeight="SemiBold" Foreground="{DynamicResource Accent}" IsVisible="{Binding Label, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-                            <TextBlock Text="{Binding Text}" TextTrimming="CharacterEllipsis" MaxWidth="420"/>
-                          </StackPanel>
-                        </Button>
+                        <StackPanel Orientation="Horizontal" Spacing="2">
+                          <!-- Tick several texts of this file to make one rule that needs all of them -->
+                          <CheckBox IsChecked="{Binding IsSelected}" MinWidth="0" Width="24" Margin="0,0,0,6" Padding="0" VerticalAlignment="Center"
+                                    ToolTip.Tip="Tick this text, and another one, to make one rule that needs all of them"/>
+                          <Button Classes="chip" Command="{Binding Command}" ToolTip.Tip="{Binding VariantsTip}">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                              <TextBlock Text="{Binding Label}" FontWeight="SemiBold" Foreground="{DynamicResource Accent}" IsVisible="{Binding Label, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                              <TextBlock Text="{Binding Text}" TextTrimming="CharacterEllipsis" MaxWidth="420"/>
+                              <TextBlock Text="{Binding VariantsBadge}" Classes="muted small" VerticalAlignment="Center" IsVisible="{Binding HasVariants}"/>
+                            </StackPanel>
+                          </Button>
+                        </StackPanel>
                       </DataTemplate>
                     </ItemsControl.ItemTemplate>
                   </ItemsControl>
+                  <Button Classes="small" Content="{Binding MakeAllRuleText}" Command="{Binding MakeAllRuleCommand}" IsVisible="{Binding CanMakeAllRule}" HorizontalAlignment="Left"/>
                 </StackPanel>
                 <StackPanel Grid.Column="3" Spacing="4" VerticalAlignment="Top">
                   <TextBlock Text="Or send it to" Classes="muted small"/>
@@ -113,21 +122,62 @@
 
     <!-- Make a rule -->
     <Grid Grid.RowSpan="3" Margin="-12,-16,-12,-12" Background="#80000000" IsVisible="{Binding RuleVisible}">
-      <Border Classes="panel" Width="620" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="24">
+      <!-- The dialog, with the regex guide to its right while a pattern is being made -->
+      <Grid ColumnDefinitions="Auto,Auto" ColumnSpacing="16" HorizontalAlignment="Center" VerticalAlignment="Center" MaxHeight="740" Margin="8">
+      <Border Classes="panel" Width="580" VerticalAlignment="Center" Padding="24">
         <StackPanel Spacing="12">
           <TextBlock Classes="h2" Text="Make a rule"/>
           <StackPanel Spacing="4">
-            <TextBlock Text="When the text contains" FontWeight="SemiBold"/>
-            <TextBox Text="{Binding RuleText}" AcceptsReturn="False"/>
+            <TextBlock Text="When the text contains" FontWeight="SemiBold" IsVisible="{Binding IsSingleRule}"/>
+            <TextBlock Text="When all of these are found in the file" FontWeight="SemiBold" IsVisible="{Binding IsAllRule}"/>
+            <TextBox Text="{Binding RuleText}" AcceptsReturn="False" IsVisible="{Binding IsSingleRule}" GotFocus="RuleTextGotFocus"/>
+            <!-- A rule with several terms: each is text or a pattern (e.g. R.?C finds REC, R3C and RC) -->
+            <StackPanel Spacing="6" IsVisible="{Binding IsAllRule}">
+              <ItemsControl ItemsSource="{Binding RuleTerms}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:TermItem">
+                    <Grid ColumnDefinitions="110,*,Auto" ColumnSpacing="8" Margin="0,0,0,6">
+                      <ComboBox ItemsSource="{Binding Types}" SelectedItem="{Binding Type}" HorizontalAlignment="Stretch"/>
+                      <TextBox Grid.Column="1" Text="{Binding Value}" PlaceholderText="Text, or a regular expression" GotFocus="TermGotFocus"/>
+                      <Button Grid.Column="2" Content="Remove" Command="{Binding RemoveCommand}" Classes="small dangerOutline" VerticalAlignment="Center"/>
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <Button Content="Add a term" Command="{Binding AddTermCommand}" Classes="small" HorizontalAlignment="Left"/>
+            </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,4,0,0">
               <ComboBox ItemsSource="{Binding RuleTypes}" SelectedItem="{Binding RuleType}" MinWidth="150"/>
-              <TextBlock Classes="muted small" VerticalAlignment="Center" Text="Contains: the text as it is. Regex: a pattern, e.g. S\d\dE\d\d"/>
+              <TextBlock Classes="muted small" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="400"
+                         Text="Contains: the text as it is. Regex: a pattern, e.g. S\d\dE\d\d. All of: several terms that must all be found, each text or a pattern."/>
             </StackPanel>
+          </StackPanel>
+          <!-- Every different way the text was read: which of them would the rule catch? Click one to use it as the text. -->
+          <StackPanel Spacing="4" IsVisible="{Binding ShowVariants}">
+            <TextBlock Text="Read in the video as" FontWeight="SemiBold"/>
+            <Border Background="{DynamicResource Table}" CornerRadius="6" Padding="8,6">
+              <ScrollViewer MaxHeight="150" Classes="gutter">
+                <ItemsControl ItemsSource="{Binding RuleVariants}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:VariantItem">
+                      <Grid ColumnDefinitions="22,*,Auto" Margin="0,1">
+                        <TextBlock Text="{Binding Mark}" FontWeight="Bold" VerticalAlignment="Center" Classes.ok="{Binding Caught}" Classes.bad="{Binding !Caught}"/>
+                        <Button Grid.Column="1" Classes="chip" Command="{Binding UseCommand}" HorizontalAlignment="Left" Margin="0" ToolTip.Tip="Use this reading as the text of the rule">
+                          <TextBlock Text="{Binding Text}" TextTrimming="CharacterEllipsis" MaxWidth="360"/>
+                        </Button>
+                        <TextBlock Grid.Column="2" Text="{Binding CountText}" Classes="muted small" VerticalAlignment="Center"/>
+                      </Grid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </ScrollViewer>
+            </Border>
+            <TextBlock Classes="muted small" TextWrapping="Wrap" Text="{Binding VariantSummary}" IsVisible="{Binding VariantSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
           </StackPanel>
           <StackPanel Spacing="4">
             <TextBlock Text="...the file goes to" FontWeight="SemiBold"/>
-            <ComboBox ItemsSource="{Binding RuleCategories}" SelectedItem="{Binding RuleCategory}" HorizontalAlignment="Stretch" IsEnabled="{Binding !HasNewCategory}"/>
-            <TextBox Text="{Binding NewCategory}" PlaceholderText="...or the name of a new category (a new folder)"/>
+            <ComboBox ItemsSource="{Binding RuleCategories}" SelectedItem="{Binding RuleCategory}" HorizontalAlignment="Stretch"/>
+            <TextBox Text="{Binding NewCategory}" PlaceholderText="Name of the new category (a new folder)"/>
           </StackPanel>
           <Border Background="{DynamicResource Table}" CornerRadius="6" Padding="12,10">
             <TextBlock Text="{Binding RulePreview}" TextWrapping="Wrap" Classes.bad="{Binding RulePreviewBad}"/>
@@ -138,6 +188,8 @@
           </StackPanel>
         </StackPanel>
       </Border>
+      <v:RegexGuidePanel Grid.Column="1" Width="380" DataContext="{Binding Guide}" x:DataType="vm:RegexGuideViewModel" IsVisible="{Binding IsVisible}"/>
+      </Grid>
     </Grid>
     <!-- Confirmation before deleting -->
     <Grid Grid.RowSpan="3" Margin="-12,-16,-12,-12" Background="#80000000" IsVisible="{Binding ConfirmVisible}">

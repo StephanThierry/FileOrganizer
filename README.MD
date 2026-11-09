@@ -119,8 +119,12 @@ This rule is last so it works as a catch-all of  HD/4K videos not being mapped b
 * **`IgnoreCategoryInContent`**: If `false`, the program will automatically trigger a match if the word in `Name` is found anywhere in the file/OCR.   
 Use `true` if the category name is a general word (like `Barry`) that should not trigger a match. Use the RegEx rules to trigger the matches.
 * **`Rules`**: A list of rules. 
-  * `Type` can be either `"Contains"` (simple text match) or `"Regex"` (Regular Expression match).
+  * `Type` can be `"Contains"` (simple text match), `"Regex"` (Regular Expression match) or `"All"` (several terms that must all be found).
   * `Value` is the text or regex pattern to look for.
+  * An `"All"` rule has a `Terms` list instead of a `Value`. Each term has its own `Type` (`"Contains"` or `"Regex"`) and `Value`, and every term must be
+    found somewhere in the file: its name, its title or comment tag, or the text read from the video (each term in any of them, not necessarily in the same
+    place). Example: `{ "Type": "All", "Terms": [ { "Type": "Regex", "Value": "R.?C" }, { "Type": "Contains", "Value": "hub" }, { "Type": "Contains", "Value": "community" } ] }`.
+    On the Unmatched screen, tick two or more of a video's texts and choose "Make one rule from the ticked texts".
 
 ---
 

@@ -26,7 +26,7 @@
         <div class="notice warn" role="alert"><p><strong>Not saved:</strong></p><ul>@foreach (var p in problems) { <li>@p</li> }</ul></div>
     }
 
-    <div class="cat-layout">
+    <div class="cat-layout @(GuideOpen ? "has-guide" : "")">
         <div>
             <div class="cat-list">
                 @foreach (var c in cats.OrderBy(c => c.Name, StringComparer.CurrentCultureIgnoreCase))
@@ -61,10 +61,31 @@
                     {
                         var error = RuleMatcher.Validate(r);
                         <div class="rule-line" style="margin-top:8px" @key="r">
-                            <select @bind="r.Type" @bind:after="Edited" aria-label="Rule type"><option>Contains</option><option>Regex</option></select>
-                            <input type="text" @bind="r.Value" @bind:event="oninput" @bind:after="Edited" aria-label="Rule text" />
+                            <select @bind="r.Type" @bind:after="() => { TypeChanged(r); Edited(); Activate(r); }" aria-label="Rule type"><option value="Contains">Contains</option><option value="Regex">Regex</option><option value="All">All of</option></select>
+                            @if (r.IsAll)
+                            {
+                                <span class="muted">Every term below must be found somewhere in the file: its name, a tag or the text read from the video (each in any of them).</span>
+                            }
+                            else
+                            {
+                                <input type="text" @bind="r.Value" @bind:event="oninput" @bind:after="Edited" @onfocus="() => Activate(r)" aria-label="Rule text" />
+                            }
                             <button @onclick="() => { selected.Rules.Remove(r); Edited(); }" aria-label="Remove rule">Remove</button>
                         </div>
+                        @if (r.IsAll)
+                        {
+                            <div class="term-list">
+                                @foreach (var t in (r.Terms ??= new()).ToList())
+                                {
+                                    <div class="rule-line" @key="t">
+                                        <select @bind="t.Type" @bind:after="() => { Edited(); ActivateTerm(t); }" aria-label="Term type"><option value="Contains">Contains</option><option value="Regex">Regex</option></select>
+                                        <input type="text" @bind="t.Value" @bind:event="oninput" @bind:after="Edited" @onfocus="() => ActivateTerm(t)" aria-label="Term text" />
+                                        <button @onclick="() => { r.Terms!.Remove(t); Edited(); }" aria-label="Remove term">Remove</button>
+                                    </div>
+                                }
+                                <p><button @onclick="() => { r.Terms!.Add(new RuleTerm()); Edited(); }">Add a term</button></p>
+                            </div>
+                        }
                         @if (error != null) { <div class="rule-error">@(error[..1].ToUpper() + error[1..])</div> }
                     }
                     <p><button @onclick="() => { selected.Rules.Add(new Rule()); Edited(); }">Add rule</button></p>
@@ -87,6 +108,11 @@
                 <p><button @onclick='() => Nav.NavigateTo("scan")'>Scan again</button></p>
             }
         </div>
+
+        @if (GuideOpen)
+        {
+            <RegexGuidePanel Value="@GuideValue" Tips="guideTips" OnClose="() => guideTarget = null" />
+        }
     </div>
 </div>
 
@@ -103,6 +129,35 @@
     private string tryText = "";
     private string? toast;
     private CancellationTokenSource? toastTimer;
+
+    // The regex guide, beside the rule being edited
+    private object? guideTarget;   // a Regex rule, or a Regex term of an "All of" rule
+    private List<RegexTip> guideTips = new();
+    private string GuideValue => guideTarget switch { Rule r => r.Value ?? "", RuleTerm t => t.Value ?? "", _ => "" };
+    private bool GuideOpen => guideTarget != null && selected != null
+        && selected.Rules.Any(r => ReferenceEquals(r, guideTarget) || (r.Terms != null && r.Terms.Any(t => ReferenceEquals(t, guideTarget))));
+
+    // Becoming a rule with several terms: the text so far is the first term, and there is room for a second
+    private void TypeChanged(Rule r)
+    {
+        if (r.IsAll && (r.Terms == null || r.Terms.Count == 0))
+            r.Terms = new() { new RuleTerm("Contains", r.Value ?? ""), new RuleTerm("Contains", "") };
+    }
+
+    private void ActivateTerm(RuleTerm t)
+    {
+        if (!t.IsRegex) return;
+        if (!GuideOpen) guideTips = RegexGuide.Tips(Working());
+        guideTarget = t;
+    }
+
+    // Choosing Regex, or clicking in the text of a Regex rule, shows the guide for that rule
+    private void Activate(Rule r)
+    {
+        if (!r.Type.Equals("Regex", StringComparison.OrdinalIgnoreCase)) return;
+        if (!GuideOpen) guideTips = RegexGuide.Tips(Working());
+        guideTarget = r;
+    }
 
     protected override void OnInitialized()
     {

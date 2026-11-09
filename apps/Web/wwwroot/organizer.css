@@ -44,6 +44,33 @@ button.icon.del:hover:not(:disabled) { color: var(--grease-hover); background: v
 .cat-item { display: flex; justify-content: space-between; gap: 8px; width: 100%; border: 0; border-top: 1px solid var(--rule); border-radius: 0; background: none; text-align: left; padding: 10px 14px; }
 .cat-item:first-child { border-top: 0; }
 .cat-item.selected { background: var(--keep-wash); font-weight: 600; }
+.cat-layout.has-guide { grid-template-columns: 280px minmax(0, 1fr) 400px; }
+.guide { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow: auto; display: flex; flex-direction: column; gap: 10px; }
+.guide + .panel { margin-top: 0; }
+.guide-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.guide-head h2 { margin: 0; }
+.guide-tips { display: flex; flex-direction: column; gap: 12px; }
+.guide-pattern { font-weight: 700; color: var(--accent); }
+.guide-example { font-family: ui-monospace, Consolas, monospace; font-size: .85rem; }
+.guide-try { border-top: 1px solid var(--rule); padding-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+.guide-try h3 { margin: 0; }
+.guide-result { background: var(--table); border-radius: 6px; padding: 8px 10px; min-height: 2.4em; white-space: pre-wrap; overflow-wrap: anywhere; }
+.guide-result mark { background: color-mix(in srgb, var(--accent) 30%, transparent); color: inherit; font-weight: 700; border-radius: 2px; }
+.term-list { margin: 0 0 8px 24px; }
+/* The readings of a text, in the dialog: does the rule being made catch each? */
+.variants { margin: 6px 0 10px; }
+.variant-list { max-height: 150px; overflow: auto; background: var(--table); border-radius: 6px; padding: 6px 8px; margin-top: 4px; }
+.variant { display: flex; align-items: center; gap: 8px; margin: 2px 0; }
+.variant .chip { margin: 0; }
+.ok-text { color: var(--keep); font-weight: 700; }
+/* The dialog with the regex guide to its right */
+.dialog-row { display: flex; gap: 16px; align-items: flex-start; justify-content: center; max-height: calc(100vh - 40px); max-width: 100%; }
+.dialog-row .dialog { width: min(560px, 100%); flex: 0 1 560px; }
+.dialog-row .guide { width: 400px; flex: 0 0 400px; position: static; max-height: calc(100vh - 40px); }
+@media (max-width: 1100px) { .dialog-row { flex-direction: column; align-items: center; overflow: auto; } .dialog-row .guide { width: min(560px, 100%); flex: none; } }
+.chip-wrap { display: inline-flex; align-items: center; gap: 2px; }
+.chip-wrap input[type=checkbox] { margin: 0 2px 0 0; }
+.un-all { margin-top: 6px; }
 .rule-line { display: grid; grid-template-columns: 130px minmax(0, 1fr) auto; gap: 8px; margin-bottom: 8px; }
 .rule-error { color: var(--grease); font-size: .85rem; margin: -4px 0 8px 138px; }
 .warn-text { color: var(--grease); }
@@ -52,7 +79,9 @@ button.icon.del:hover:not(:disabled) { color: var(--grease-hover); background: v
   .fo-thumbs .fo-thumb { width: 128px; height: 72px; }
   .un-row { grid-template-columns: 402px minmax(0, 1fr) 300px; }
 }
+@media (max-width: 1300px) { .cat-layout.has-guide { grid-template-columns: 240px minmax(0, 1fr) 340px; } }
 @media (max-width: 800px) {
+  .cat-layout.has-guide { grid-template-columns: 1fr; }
   .fo-row { grid-template-columns: 1fr; }
   .fo-thumbs { flex-wrap: wrap; }
   .fo-thumbs .fo-thumb { width: 30%; height: auto; aspect-ratio: 16 / 9; }

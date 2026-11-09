@@ -5,27 +5,91 @@ using CommunityToolkit.Mvvm.Input;
 
 namespace FileOrganizer.Desktop.ViewModels;
 
-public partial class RuleItem : ObservableObject
+/// <summary>A tip in the regex guide as the list shows it.</summary>
+public sealed record RegexTipItem(string Pattern, string Meaning, string Example, string UsedText);
+
+/// <summary>Something with a pattern the regex guide can test: a Regex rule, or a Regex term of an "All of" rule.</summary>
+public interface IGuideTarget { string GuideValue { get; } }
+
+/// <summary>One term of an "All of" rule: text to find, or a pattern.</summary>
+public partial class TermItem : ObservableObject, IGuideTarget
 {
+    private readonly Action<TermItem> remove;
+    private readonly Action edited;
+    private readonly Action<IGuideTarget> activated;
+
+    [ObservableProperty] private string type;
+    [ObservableProperty] private string value;
+
+    public string[] Types { get; } = { "Contains", "Regex" };
+    public bool IsRegex => Type == "Regex";
+    public string GuideValue => Value ?? "";
+
+    public TermItem(RuleTerm term, Action<TermItem> remove, Action edited, Action<IGuideTarget> activated)
+    {
+        type = term.IsRegex ? "Regex" : "Contains"; value = term.Value;
+        this.remove = remove; this.edited = edited; this.activated = activated;
+    }
+
+    /// <summary>The user is working on this term (chose Regex, or clicked in its text): the regex guide shows for it.</summary>
+    public void Activate() { if (IsRegex) activated(this); }
+
+    partial void OnTypeChanged(string value) { OnPropertyChanged(nameof(IsRegex)); edited(); Activate(); }
+    partial void OnValueChanged(string value) { OnPropertyChanged(nameof(GuideValue)); edited(); }
+
+    public RuleTerm ToTerm() => new(Type, Value ?? "");
+    [RelayCommand] private void Remove() => remove(this);
+}
+
+public partial class RuleItem : ObservableObject, IGuideTarget
+{
+    /// <summary>The name of the rule type with several terms, as the drop-down shows it (saved as "All").</summary>
+    public const string AllLabel = "All of";
+
     private readonly Action<RuleItem> remove;
     private readonly Action edited;
+    private readonly Action<IGuideTarget> activated;
 
     [ObservableProperty] private string type;
     [ObservableProperty] private string value;
     [ObservableProperty] private string error = "";
 
     public bool HasError => Error.Length > 0;
-    public string[] Types { get; } = { "Contains", "Regex" };
+    public string[] Types { get; } = { "Contains", "Regex", AllLabel };
+    public ObservableCollection<TermItem> Terms { get; } = new();
 
-    public RuleItem(Rule rule, Action<RuleItem> remove, Action edited)
+    public bool IsRegex => Type == "Regex";
+    public bool IsAll => Type == AllLabel;
+    public bool IsSingle => !IsAll;
+    public string GuideValue => Value ?? "";
+
+    public RuleItem(Rule rule, Action<RuleItem> remove, Action edited, Action<IGuideTarget> activated)
     {
-        type = rule.Type; value = rule.Value;
-        this.remove = remove; this.edited = edited;
+        type = rule.IsAll ? AllLabel : rule.Type; value = rule.Value;
+        this.remove = remove; this.edited = edited; this.activated = activated;
+        if (rule.IsAll) foreach (var t in rule.Terms ?? new()) Terms.Add(NewTerm(t));
         Validate();
     }
 
-    partial void OnTypeChanged(string value) { Validate(); edited(); }
-    partial void OnValueChanged(string value) { Validate(); edited(); }
+    private TermItem NewTerm(RuleTerm t) => new(t, RemoveTerm, TermEdited, activated);
+    private void TermEdited() { Validate(); edited(); }
+
+    /// <summary>The user is working on this rule (chose Regex, or clicked in its text): the regex guide shows for it.</summary>
+    public void Activate() { if (IsRegex) activated(this); }
+
+    partial void OnTypeChanged(string value)
+    {
+        OnPropertyChanged(nameof(IsRegex)); OnPropertyChanged(nameof(IsAll)); OnPropertyChanged(nameof(IsSingle));
+        // Becoming a rule with several terms: the text so far is the first term, and there is room for a second
+        if (IsAll && Terms.Count == 0)
+        {
+            Terms.Add(NewTerm(new RuleTerm("Contains", Value ?? "")));
+            Terms.Add(NewTerm(new RuleTerm("Contains", "")));
+        }
+        Validate(); edited(); Activate();
+    }
+
+    partial void OnValueChanged(string value) { OnPropertyChanged(nameof(GuideValue)); Validate(); edited(); }
     partial void OnErrorChanged(string value) => OnPropertyChanged(nameof(HasError));
 
     private void Validate()
@@ -34,14 +98,31 @@ public partial class RuleItem : ObservableObject
         Error = problem == null ? "" : problem[..1].ToUpper() + problem[1..];
     }
 
-    public Rule ToRule() => new(Type, Value ?? "");
+    public bool Owns(IGuideTarget target) => ReferenceEquals(target, this) || Terms.Any(t => ReferenceEquals(t, target));
+
+    public Rule ToRule() => IsAll ? Rule.AllOf(Terms.Select(t => t.ToTerm())) : new(Type, Value ?? "");
+
     [RelayCommand] private void Remove() => remove(this);
+
+    [RelayCommand]
+    private void AddTerm()
+    {
+        Terms.Add(NewTerm(new RuleTerm("Contains", "")));
+        TermEdited();
+    }
+
+    private void RemoveTerm(TermItem term)
+    {
+        Terms.Remove(term);
+        TermEdited();
+    }
 }
 
 public partial class CategoryItem : ObservableObject
 {
     private readonly Action<RuleItem> remove;
     private readonly Action edited;
+    private readonly Action<IGuideTarget> activated;
 
     [ObservableProperty] private string name;
     [ObservableProperty] private bool ignoreName;
@@ -56,11 +137,11 @@ public partial class CategoryItem : ObservableObject
 
     public ObservableCollection<RuleItem> Rules { get; } = new();
 
-    public CategoryItem(Category category, Action<RuleItem> remove, Action edited)
+    public CategoryItem(Category category, Action<RuleItem> remove, Action edited, Action<IGuideTarget> activated)
     {
-        this.remove = remove; this.edited = edited;
+        this.remove = remove; this.edited = edited; this.activated = activated;
         name = category.Name; ignoreName = category.IgnoreCategoryInContent;
-        foreach (var r in category.Rules) Rules.Add(new RuleItem(r, remove, edited));
+        foreach (var r in category.Rules) Rules.Add(new RuleItem(r, remove, edited, activated));
     }
 
     public bool NameIsRule => !IgnoreName;
@@ -70,9 +151,11 @@ public partial class CategoryItem : ObservableObject
     [RelayCommand]
     private void AddRule()
     {
-        Rules.Add(new RuleItem(new Rule("Contains", ""), remove, edited));
+        Rules.Add(new RuleItem(new Rule("Contains", ""), remove, edited, activated));
         edited();
     }
+
+    public bool Owns(IGuideTarget target) => Rules.Any(r => r.Owns(target));
 
     public Category ToCategory() => new() { Name = (Name ?? "").Trim(), IgnoreCategoryInContent = IgnoreName, Rules = Rules.Select(r => r.ToRule()).ToList() };
 }
@@ -99,6 +182,9 @@ public partial class RulesViewModel : ViewModelBase
     [ObservableProperty] private bool tryMatches;
     [ObservableProperty] private string? settingsError;
 
+    // The regex guide, beside the rule being edited
+    public RegexGuideViewModel Guide { get; }
+
     public bool HasProblems => Problems.Length > 0;
     public bool HasSelected => Selected != null;
     public bool HasSettingsError => SettingsError != null;
@@ -107,6 +193,7 @@ public partial class RulesViewModel : ViewModelBase
     {
         this.app = app;
         this.main = main;
+        Guide = new RegexGuideViewModel(ToSettings) { StillValid = t => Selected?.Owns(t) == true };   // a removed rule or term closes it
         SettingsError = app.SettingsError;
         app.SettingsChanged += () => Dispatcher.UIThread.Post(() => { if (!IsEdited) Load(); });
         app.ResultChanged += () => Dispatcher.UIThread.Post(UpdateCounts);
@@ -114,9 +201,15 @@ public partial class RulesViewModel : ViewModelBase
     }
 
     partial void OnProblemsChanged(string value) => OnPropertyChanged(nameof(HasProblems));
-    partial void OnSelectedChanged(CategoryItem? value) => OnPropertyChanged(nameof(HasSelected));
+    partial void OnSelectedChanged(CategoryItem? value) { OnPropertyChanged(nameof(HasSelected)); if (Guide.Target != null && value?.Owns(Guide.Target) != true) Guide.Close(); }
     partial void OnSettingsErrorChanged(string? value) => OnPropertyChanged(nameof(HasSettingsError));
     partial void OnTryTextChanged(string value) => Try();
+    /// <summary>Shows the regex guide for a Regex rule or term (it counts the patterns of the rules as they are being edited).</summary>
+    private void ShowGuide(IGuideTarget rule)
+    {
+        if (loading) return;
+        Guide.Show(rule);
+    }
 
     private void Load()
     {
@@ -124,7 +217,7 @@ public partial class RulesViewModel : ViewModelBase
         var keep = Selected?.Name;
         Categories.Clear();
         SortedCategories.Clear();
-        foreach (var c in app.Settings.Categories) Categories.Add(new CategoryItem(c, RemoveRule, Edited));
+        foreach (var c in app.Settings.Categories) Categories.Add(new CategoryItem(c, RemoveRule, Edited, ShowGuide));
         foreach (var c in Categories.OrderBy(c => c.Name, NameOrder)) SortedCategories.Add(c);
         UpdatePriorities();
         Selected = Categories.FirstOrDefault(c => c.Name == keep) ?? SortedCategories.FirstOrDefault();
@@ -161,6 +254,7 @@ public partial class RulesViewModel : ViewModelBase
         Resort();
         IsEdited = true;
         Try();
+        Guide.Update();
     }
 
     // How many files of the last scan each category has now
@@ -194,7 +288,7 @@ public partial class RulesViewModel : ViewModelBase
     private void RemoveRule(RuleItem rule)
     {
         foreach (var c in Categories)
-            if (c.Rules.Remove(rule)) { Edited(); return; }
+            if (c.Rules.Remove(rule)) { if (Guide.Target != null && rule.Owns(Guide.Target)) Guide.Close(); Edited(); return; }
     }
 
     [RelayCommand]
@@ -202,7 +296,7 @@ public partial class RulesViewModel : ViewModelBase
     {
         string name = "New category";
         for (int i = 2; Categories.Any(c => c.Name.Equals(name, StringComparison.OrdinalIgnoreCase)); i++) name = $"New category {i}";
-        var item = new CategoryItem(new Category { Name = name, IgnoreCategoryInContent = true, Rules = { new Rule("Contains", "") } }, RemoveRule, Edited);
+        var item = new CategoryItem(new Category { Name = name, IgnoreCategoryInContent = true, Rules = { new Rule("Contains", "") } }, RemoveRule, Edited, ShowGuide);
         Categories.Add(item);
         Resort();
         UpdatePriorities();

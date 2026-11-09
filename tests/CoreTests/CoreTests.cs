@@ -241,6 +241,22 @@ public class EngineTests : IDisposable
     }
 
     [Fact]
+    public void AVideoOnceFoundUnreadable_IsReadAgainNextTime_ButTheGoodOnesComeFromTheCache()
+    {
+        Files("broken.mp4", "clip.mp4");
+        ocr.Videos["broken.mp4"] = (Array.Empty<string>(), true);
+        ocr.Videos["clip.mp4"] = (new[] { "nothing" }, false);
+        NewEngine().Run(dir, Rules(), CancellationToken.None);
+
+        // The reader is fixed (it was a false alarm): the next scan reads the video again, and does not read the good one
+        ocr.Read_.Clear();
+        ocr.Videos["broken.mp4"] = (new[] { "barrytv" }, false);
+        var second = NewEngine().Run(dir, Rules(), CancellationToken.None);
+        Assert.Equal(new[] { "broken.mp4" }, ocr.Read_);
+        Assert.Equal("Barry", second.Decisions.Single(d => d.FileName == "broken.mp4").Category);
+    }
+
+    [Fact]
     public void TheOcrCacheIsUsedAndFilledInTheScannedFolder()
     {
         Files("clip.mp4");

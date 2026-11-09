@@ -61,17 +61,28 @@ public sealed class VideoTextReader : IDisposable
         _ocr = new RapidOCRSharp(new ExecutionProviderCPU(config));
     }
 
-    /// <summary>Returns the text lines found in a BGR video frame.</summary>
+    /// <summary>
+    /// Returns the text found in a BGR video frame, one entry per piece of text on screen: the detector finds single words,
+    /// so the words on the same row of the picture are joined ("my" "own" "summer" is "my own summer").
+    /// </summary>
     public List<string> ReadLines(Mat bgrFrame)
     {
         var result = _ocr.RecognizeText(bgrFrame);
         var recognized = result.RecResult?.Data;
         if (recognized == null) return new List<string>();
+        var boxes = result.DetResult?.Data?.DetItems;
 
-        return recognized
-            .Where(r => r.Score >= MinLineConfidence && !string.IsNullOrWhiteSpace(r.Label))
-            .Select(r => r.Label.Trim())
-            .ToList();
+        var words = new List<OcrWord>();
+        for (int i = 0; i < recognized.Length; i++)
+        {
+            var r = recognized[i];
+            if (r.Score < MinLineConfidence || string.IsNullOrWhiteSpace(r.Label)) continue;
+            // The recognised words come in the order of the detected boxes; without a box the word stands alone
+            var box = boxes != null && boxes.Length == recognized.Length ? boxes[i] : null;
+            if (box?.Box == null || box.Box.Length == 0) { words.Add(new OcrWord(r.Label.Trim(), 0, 0, 0, 0, -1 - i)); continue; }
+            words.Add(new OcrWord(r.Label.Trim(), box.Box.Min(p => p.X), box.Box.Max(p => p.X), box.Box.Min(p => p.Y), box.Box.Max(p => p.Y), box.LineId));
+        }
+        return OcrLines.Join(words);
     }
 
     public void Dispose() => _ocr.Dispose();
@@ -111,4 +122,38 @@ public sealed class VideoTextReader : IDisposable
     }
 
     private sealed record ModelFile(string FileName, string Url, string Sha256);
+}
+
+/// <summary>One word the OCR found, with where it is in the picture and which row (LineId) the detector put it on.</summary>
+public readonly record struct OcrWord(string Text, float Left, float Right, float Top, float Bottom, int LineId);
+
+/// <summary>Putting the words of a frame together into the pieces of text that were on screen.</summary>
+public static class OcrLines
+{
+    // Words further apart than this many text heights are separate pieces of text (a logo in one corner, a caption in the other)
+    private const float MaxGapInHeights = 3f;
+
+    public static List<string> Join(IEnumerable<OcrWord> words)
+    {
+        var lines = new List<string>();
+        foreach (var row in words.GroupBy(w => w.LineId).OrderBy(g => g.Min(w => w.Top)))
+        {
+            var ordered = row.OrderBy(w => w.Left).ToList();
+            var line = new List<string>();
+            OcrWord previous = default;
+            foreach (var w in ordered)
+            {
+                float height = Math.Max(1, Math.Max(previous.Bottom - previous.Top, w.Bottom - w.Top));
+                if (line.Count > 0 && w.Left - previous.Right > MaxGapInHeights * height)
+                {
+                    lines.Add(string.Join(" ", line));
+                    line.Clear();
+                }
+                line.Add(w.Text);
+                previous = w;
+            }
+            if (line.Count > 0) lines.Add(string.Join(" ", line));
+        }
+        return lines;
+    }
 }

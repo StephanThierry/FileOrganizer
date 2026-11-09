@@ -36,7 +36,7 @@ public sealed class Settings
             joined++;
             keep.IgnoreCategoryInContent &= c.IgnoreCategoryInContent;
             foreach (var r in c.Rules)
-                if (!keep.Rules.Any(k => k.Type == r.Type && k.Value.Trim().Equals(r.Value.Trim(), StringComparison.OrdinalIgnoreCase)))
+                if (!keep.Rules.Any(k => k.SameAs(r)))
                     keep.Rules.Add(r);
         }
         Categories = merged;
@@ -53,8 +53,15 @@ public sealed class Settings
             c.Rules ??= new();
             foreach (var r in c.Rules)
             {
-                r.Type = r.Type?.Equals("Regex", StringComparison.OrdinalIgnoreCase) == true ? "Regex" : "Contains";
+                r.Type = r.Type?.Equals("Regex", StringComparison.OrdinalIgnoreCase) == true ? "Regex"
+                    : r.Type?.Equals("All", StringComparison.OrdinalIgnoreCase) == true ? "All" : "Contains";
                 r.Value ??= "";
+                if (r.Type == "All")
+                {
+                    r.Terms ??= new();
+                    foreach (var t in r.Terms) { t.Type = t.IsRegex ? "Regex" : "Contains"; t.Value ??= ""; }
+                }
+                else r.Terms = null;
             }
         }
     }
@@ -73,14 +80,47 @@ public sealed class Category
     public List<Rule> Rules { get; set; } = new();
 }
 
-public sealed class Rule
+/// <summary>One of the terms of an "All" rule: plain text ("Contains") or a "Regex".</summary>
+public sealed class RuleTerm
 {
-    /// <summary>"Contains" (plain text) or "Regex".</summary>
     public string Type { get; set; } = "Contains";
     public string Value { get; set; } = "";
 
+    public RuleTerm() { }
+    public RuleTerm(string type, string value) { Type = type; Value = value; }
+    [JsonIgnore] public bool IsRegex => Type.Equals("Regex", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>For messages: plain text as it is, a regex between slashes.</summary>
+    public override string ToString() => IsRegex ? "/" + Value + "/" : Value;
+}
+
+public sealed class Rule
+{
+    /// <summary>
+    /// "Contains" (plain text), "Regex", or "All": a rule with several terms (Terms) that all have to be found somewhere in the
+    /// file: its name, its tags and the text read from the video (each term in any of them, not necessarily in the same place).
+    /// </summary>
+    public string Type { get; set; } = "Contains";
+    public string Value { get; set; } = "";
+
+    /// <summary>The terms of an "All" rule (each Contains or Regex); not used, and not saved, by the other types.</summary>
+    public List<RuleTerm>? Terms { get; set; }
+
     public Rule() { }
     public Rule(string type, string value) { Type = type; Value = value; }
+    public static Rule AllOf(IEnumerable<RuleTerm> terms) => new() { Type = "All", Value = "", Terms = terms.ToList() };
+
+    [JsonIgnore] public bool IsAll => Type.Equals("All", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>The rule in words: the text, the pattern, or "All of: rec + /R.?C/ + hub".</summary>
+    public string Describe() => IsAll ? "All of: " + string.Join(" + ", (Terms ?? new()).Select(t => t.ToString())) : Value;
+
+    /// <summary>The same rule (same type and text, or the same terms): adding it twice is pointless.</summary>
+    public bool SameAs(Rule other) =>
+        IsAll || other.IsAll
+            ? IsAll && other.IsAll && (Terms ?? new()).Select(t => t.Type + ":" + t.Value.Trim().ToLowerInvariant()).OrderBy(x => x)
+                .SequenceEqual((other.Terms ?? new()).Select(t => t.Type + ":" + t.Value.Trim().ToLowerInvariant()).OrderBy(x => x))
+            : Type == other.Type && Value.Trim().Equals(other.Value.Trim(), StringComparison.OrdinalIgnoreCase);
 }
 
 public sealed class Options
