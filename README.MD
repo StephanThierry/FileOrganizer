@@ -24,8 +24,10 @@ The processor evaluates every file in the target folder using a 3-step deep scan
 * Every file in it, at any depth, is organized like the other files: first its own file name and tags; a file with no match of its own goes with the folder (Review shows "Folder name" as the reason). The text of videos in such a folder is not read by OCR, because the folder's name already says where they belong.
 * The files are moved up into the category's folder inside the scanned folder (flat: the sub-folders are not kept). As always nothing is overwritten: if two files have the same name, the second one stays where it is and is reported.
 * A folder that is a category's own folder (or `_CHECK_`) is never opened, and a folder whose name fits no category is left alone.
-* Nothing is deleted. After the files are moved (or deleted in Review), Review lists what is left in each folder that was opened - the files, the empty sub-folders, folders that are empty or gone - so you can clean up yourself.
+* Nothing is deleted by itself. After **Move files now**, a **Status** window opens with a compact table of the folders that were opened: how many files are left in each, their size, whether the folder is *Empty*, still has *Files left*, or is *Gone*, and what is left (the first file names, the empty sub-folders). The **Status** button on Review opens it again at any time (it also follows single moves and deletes). **Delete empty folders**, next to **Close**, deletes the folders with no file left (and their empty sub-folders) from the drive - each is checked again first, only folders directly inside the scanned folder are touched - and takes them out of the table.
 * The move scripts use the path inside the folder (`mv -n -- 'folder/sub/file' 'Category/'`), and `unmatched_files.txt` lists such files with that path.
+
+**Delete confirmation.** The delete icon on a file in Review (and in Unmatched) asks first by default. The checkbox **Delete confirmation** (saved as `Options.ConfirmDelete` in `settings.json`, on by default) turns that off: the icon then deletes the file at once, without asking - to the Recycle Bin where there is one, else for good, and the toast says which.
 
 **Outputs Generated:**
 * `move_files.ps1` / `move_files.sh`: A script to move files into categorized subfolders.

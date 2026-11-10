@@ -18,6 +18,18 @@ public abstract partial class ViewModelBase : ObservableObject
     [ObservableProperty] private string confirmText = "";
     [ObservableProperty] private string confirmButton = "OK";
 
+    // "Delete confirmation": ask before deleting a file (on by default); kept in settings.json, the same on Review and Unmatched
+    private AppController? confirmApp;
+    [ObservableProperty] private bool confirmDelete = true;
+    partial void OnConfirmDeleteChanged(bool value) => confirmApp?.SetConfirmDelete(value);
+
+    protected void BindConfirmDelete(AppController app)
+    {
+        confirmApp = app;
+        ConfirmDelete = app.Settings.Opt.ConfirmDelete;
+        app.SettingsChanged += () => Dispatcher.UIThread.Post(() => ConfirmDelete = app.Settings.Opt.ConfirmDelete);
+    }
+
     protected void ShowToast(string text, int ms = 5000)
     {
         Toast = text;
@@ -42,6 +54,13 @@ public abstract partial class ViewModelBase : ObservableObject
     {
         string? path = app.PathOf(d);
         if (path == null || !File.Exists(path)) { ShowToast("The file is not there: " + path); return; }
+        // Delete confirmation off: the file is deleted at once
+        if (!app.Settings.Opt.ConfirmDelete)
+        {
+            var (done, text) = app.DeleteFile(d);
+            ShowToast(text, done ? 6000 : 10000);
+            return;
+        }
         bool recoverable = app.CanRecover(d);
         Ask(recoverable ? $"Move this file to the {RecycleBin.Name}?" : "Delete this file permanently?",
             $"{d.FileName}\n{Path.GetDirectoryName(path)}\n\n"

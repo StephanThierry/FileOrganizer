@@ -9,6 +9,7 @@
     <div class="page-head">
         <div>
             <h1>Unmatched</h1>
+            <label class="inline" style="float:right" title="On: deleting a file asks first. Off: the delete icon deletes the file at once, without asking."><input type="checkbox" checked="@App.Settings.Opt.ConfirmDelete" @onchange="e => App.SetConfirmDelete((bool)e.Value!)" /> Delete confirmation</label>
             <p>@(App.Result == null ? "Files that no rule matched are listed here, with the text that was found in them." : rows.Count > 0 ? $"{Fmt.Plural(rows.Count, "file", "files")} matched nothing. Click a text to make a rule from it, or choose a folder for the file." : "Every file has a category.")</p>
         </div>
     </div>
@@ -64,7 +65,7 @@
                         @foreach (var c in App.CategoryNames()) { <option value="@c">@c</option> }
                     </select>
                     <button class="icon" disabled="@(d.EffectiveCategory == null)" @onclick="() => MoveOne(d)" title="Move this file now (to the folder chosen here; nothing is overwritten)" aria-label="Move @d.FileName now"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-8 11v-3H8v-2h4V9l4 4-4 4z" fill="currentColor" /></svg></button>
-                    <button class="icon del" @onclick="() => deleting = d" title="Delete the file (asks first)" aria-label="Delete @d.FileName"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill="currentColor" /></svg></button>
+                    <button class="icon del" @onclick="() => AskDelete(d)" title="@(App.Settings.Opt.ConfirmDelete ? "Delete the file (asks first)" : "Delete the file now (Delete confirmation is off)")" aria-label="Delete @d.FileName"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill="currentColor" /></svg></button>
                     </div>
                 </div>
             }
@@ -172,6 +173,13 @@
         index = new Dictionary<FileDecision, int>();
         for (int i = 0; i < decisions.Count; i++) index[decisions[i]] = i;
         rows = decisions.Where(d => d.IsUnmatched).ToList();
+    }
+
+    // Delete confirmation on (the default): the dialog asks. Off: the file is deleted at once.
+    private void AskDelete(FileDecision d)
+    {
+        if (App.Settings.Opt.ConfirmDelete) deleting = d;
+        else Deleted(App.DeleteFile(d));
     }
 
     private void Deleted((bool Ok, string Message) result)

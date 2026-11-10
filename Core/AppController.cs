@@ -70,7 +70,7 @@ public sealed class AppController : IDisposable
         catch (Exception) { /* a broken state file is just forgotten */ }
 
         Engine = new OrganizeEngine(() => new OpenCvVideoOcr(ModelsFolder)) { ThumbFolder = ThumbFolder };
-        Engine.Completed += result => { Result = result; LastLeftovers = null; ResultChanged?.Invoke(); };
+        Engine.Completed += result => { Result = result; LastLeftovers = null; dismissedFolders.Clear(); ResultChanged?.Invoke(); };
     }
 
     public static AppController Open(string dataFolder)
@@ -143,13 +143,46 @@ public sealed class AppController : IDisposable
         SettingsChanged?.Invoke();
     }
 
+    /// <summary>
+    /// Switches "Delete confirmation" on or off and keeps the choice in settings.json (default on). Off: the delete icons on Review and Unmatched
+    /// delete the file at once. (Not while settings.json is unreadable: saving would replace it.)
+    /// </summary>
+    public void SetConfirmDelete(bool on)
+    {
+        if (SettingsError != null || Settings.Opt.ConfirmDelete == on) return;
+        var s = Settings.Clone();
+        s.Opt.ConfirmDelete = on;
+        try { SettingsStore.Save(DataFolder, s); } catch (Exception) { return; }
+        Settings = s;
+        SettingsChanged?.Invoke();
+    }
+
     /// <summary>What is left, after moves and deletes, in the folders the scan opened ("Process folders"); null when it opened none or nothing was done yet.</summary>
     public LeftoverReport? LastLeftovers { get; private set; }
 
+    // Folders taken out of the overview by "Delete empty folders" (and not shown as gone afterwards)
+    private readonly HashSet<string> dismissedFolders = new(StringComparer.OrdinalIgnoreCase);
+
     private void RefreshLeftovers()
     {
-        var opened = Result?.Decisions.Where(d => d.FolderName != null).Select(d => d.FolderName!).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        var opened = Result?.Decisions.Where(d => d.FolderName != null).Select(d => d.FolderName!).Distinct(StringComparer.OrdinalIgnoreCase)
+            .Where(n => !dismissedFolders.Contains(n)).ToList();
         LastLeftovers = Result == null || opened == null || opened.Count == 0 ? null : FolderLeftovers.Build(Result.Folder, opened);
+    }
+
+    /// <summary>
+    /// "Delete empty folders" in the Status window: deletes the opened folders with no file left in them from the drive (each checked
+    /// again first) and takes them, and the ones that are gone already, out of the overview. Returns what was done.
+    /// </summary>
+    public EmptyFoldersResult DeleteEmptyFolders()
+    {
+        if (Result == null || LastLeftovers == null) return new EmptyFoldersResult(Array.Empty<string>(), Array.Empty<string>());
+        var result = FolderLeftovers.DeleteEmpty(Result.Folder, LastLeftovers);
+        foreach (var name in result.Deleted) dismissedFolders.Add(name);
+        foreach (var gone in LastLeftovers.Folders.Where(f => !f.Exists)) dismissedFolders.Add(gone.Name);
+        RefreshLeftovers();
+        ResultChanged?.Invoke();
+        return result;
     }
 
     // ---------- The rules ----------

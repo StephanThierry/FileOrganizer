@@ -145,6 +145,7 @@ public partial class UnmatchedViewModel : ViewModelBase
             // Open while the dialog is: for its own text when that is a Regex, for a term of a rule with several terms
             StillValid = t => RuleVisible && (ReferenceEquals(t, dialogPattern) ? RuleType == "Regex" : RuleTerms.Any(x => ReferenceEquals(x, t))),
         };
+        BindConfirmDelete(app);
         app.ResultChanged += () => Dispatcher.UIThread.Post(Reload);
         app.SettingsChanged += () => Dispatcher.UIThread.Post(RefreshChoices);
         RefreshChoices();
@@ -190,6 +191,10 @@ public partial class UnmatchedViewModel : ViewModelBase
 
     private void RefreshChoices()
     {
+        // Saving any setting (e.g. "Delete confirmation") comes here too: only rebuild the lists when the categories changed
+        var names = new List<string> { ReviewViewModel.LeaveHere };
+        names.AddRange(app.CategoryNames());
+        if (Choices.SequenceEqual(names)) return;
         Choices.Clear();
         Choices.Add(ReviewViewModel.LeaveHere);
         RuleCategories.Clear();

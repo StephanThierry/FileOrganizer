@@ -138,6 +138,12 @@ public sealed class Options
     /// </summary>
     public bool ProcessFolders { get; set; }
 
+    /// <summary>
+    /// "Delete confirmation" on Review (and Unmatched): on (the default), deleting a file asks first. Off: the file is deleted at once,
+    /// without asking (to the Recycle Bin where there is one, else for good, as always).
+    /// </summary>
+    public bool ConfirmDelete { get; set; } = true;
+
     public static readonly string[] DefaultVideoExtensions = { ".mp4", ".mpeg", ".mpv", ".flv", ".mkv", ".avi", ".mov", ".wmv" };
 }
 

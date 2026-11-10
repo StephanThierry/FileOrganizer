@@ -30,7 +30,11 @@
       <TextBlock Classes="muted" TextWrapping="Wrap" Margin="0,4,0,0"
                  Text="Files that no rule caught, with the tags and the text found in them. Click a text to make a rule from it: the files it catches go to Review at once."/>
     </StackPanel>
-    <TextBlock Grid.Row="1" Text="{Binding Summary}" FontWeight="SemiBold" Margin="0,0,0,10" IsVisible="{Binding HasResult}"/>
+    <DockPanel Grid.Row="1" Margin="0,0,0,10" IsVisible="{Binding HasResult}">
+      <CheckBox DockPanel.Dock="Right" IsChecked="{Binding ConfirmDelete}" Content="Delete confirmation"
+                ToolTip.Tip="On: deleting a file asks first. Off: the delete icon deletes the file at once, without asking."/>
+      <TextBlock Text="{Binding Summary}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+    </DockPanel>
 
     <Border Grid.Row="2" Classes="panel" Padding="40" VerticalAlignment="Top" IsVisible="{Binding !HasResult}">
       <StackPanel HorizontalAlignment="Center" Spacing="10">
@@ -71,7 +75,7 @@
                   <Button Classes="icon" Command="{Binding PlayFileCommand}" ToolTip.Tip="Open it (in the default player)">
                     <Path Data="M3,1.5 L3,12.5 L12,7 Z" Fill="{Binding $parent[Button].Foreground}" Width="14" Height="14"/>
                   </Button>
-                  <Button Classes="icon del" Command="{Binding DeleteCommand}" ToolTip.Tip="Delete the file (to the Recycle Bin, asks first)" AutomationProperties.Name="Delete the file">
+                  <Button Classes="icon del" Command="{Binding DeleteCommand}" ToolTip.Tip="Delete the file (to the Recycle Bin; asks first unless Delete confirmation is off)" AutomationProperties.Name="Delete the file">
                       <Path Data="M6,19 C6,20.1 6.9,21 8,21 L16,21 C17.1,21 18,20.1 18,19 L18,7 L6,7 Z M19,4 L15.5,4 L14.5,3 L9.5,3 L8.5,4 L5,4 L5,6 L19,6 Z" Fill="{Binding $parent[Button].Foreground}" Width="16" Height="16" Stretch="Uniform"/>
                     </Button>
                 </StackPanel>

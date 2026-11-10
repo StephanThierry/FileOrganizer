@@ -92,6 +92,54 @@ void WaitFor(Func<bool> condition, int seconds, string what)
 }
 
 // --- The screens ---
+// SHOT_DELETECONFIRM=1: "Delete confirmation" on Review - on by default (the delete icon asks), off (it deletes at once). The files are on the
+// computer's own administrative share, which has no Recycle Bin: they are deleted for good, so nothing lands in the user's Recycle Bin.
+if (Environment.GetEnvironmentVariable("SHOT_DELETECONFIRM") == "1")
+{
+    string full = Path.GetFullPath(work);
+    string unc = new string(Path.DirectorySeparatorChar, 2) + "localhost" + Path.DirectorySeparatorChar + full[0] + "$" + full[2..];
+    string confirmRoot = Path.Combine(unc, "confirm");
+    Directory.CreateDirectory(confirmRoot);
+    foreach (var n in new[] { "A", "B", "C" }) File.WriteAllText(Path.Combine(confirmRoot, $"Course {n}.txt"), "x");
+    Console.WriteLine($"[confirm] share folder: {confirmRoot} exists = {Directory.Exists(confirmRoot)}; SetTargetFolder says: {app.SetTargetFolder(confirmRoot) ?? "(nothing, it worked)"}; target now = {app.TargetFolder}");
+    vm.Scan.Folder = app.TargetFolder;
+    vm.Scan.StartCommand.Execute(null);
+    WaitFor(() => !app.Engine.IsRunning && app.Result != null, 60, "the scan");
+    Pump(500);
+    vm.SelectedTab = MainViewModel.ReviewTab; Pump(600);
+    Console.WriteLine($"[confirm] target = {app.TargetFolder}; decisions = {app.Result?.Decisions.Count}; rows = {vm.Review.Rows.Count}; error: {vm.Scan.Error}; phase: {app.Engine.Current.Phase} {app.Engine.Current.Message}");
+    FileRow RowOf(string n) => vm.Review.Rows.Single(r => r.FileName == $"Course {n}.txt");
+    bool Exists(string n) => File.Exists(Path.Combine(confirmRoot, $"Course {n}.txt"));
+    Console.WriteLine($"[confirm] Delete confirmation is on to begin with: {vm.Review.ConfirmDelete} (settings: {app.Settings.Opt.ConfirmDelete}); Recycle Bin used here: {app.CanRecover(RowOf("A").Decision)}");
+    RowOf("A").DeleteCommand.Execute(null); Pump(300);
+    Console.WriteLine($"[confirm] ON, delete icon of A: dialog = {vm.Review.ConfirmVisible} (\"{vm.Review.ConfirmTitle}\"), A still there = {Exists("A")}");
+    Shot("o_confirm_on");
+    vm.Review.ConfirmNoCommand.Execute(null); Pump(200);
+    Console.WriteLine($"[confirm] ON, Cancel: A still there = {Exists("A")}");
+    RowOf("A").DeleteCommand.Execute(null); Pump(200); vm.Review.ConfirmYesCommand.Execute(null); Pump(500);
+    Console.WriteLine($"[confirm] ON, confirmed: A there = {Exists("A")} ({(Exists("A") ? "FAILED" : "OK")}), toast: {vm.Review.Toast}");
+    string GoesTo() => string.Join(" | ", vm.Review.Rows.Select(r => r.FileName + " -> \"" + r.Choice + "\""));
+    string goesBefore = GoesTo();
+    vm.Review.ConfirmDelete = false; Pump(300);
+    Console.WriteLine($"[confirm] Goes to before: {goesBefore}");
+    Console.WriteLine($"[confirm] Goes to after the switch: {GoesTo()} ({(GoesTo() == goesBefore ? "OK, unchanged" : "FAILED, changed")})");
+    Shot("o_confirm_goesto");
+    // The categories really change (a new rule is saved): the drop-downs are rebuilt and still show where each file goes
+    var changedRules = app.Settings.Clone(); changedRules.Categories.Add(new Category { Name = "Extra category" });
+    var problems = app.SaveSettings(changedRules); Pump(400);
+    Console.WriteLine($"[confirm] new category saved (problems: {problems.Count}); choices: {string.Join(", ", vm.Review.Rows[0].Choices)}; Goes to: {GoesTo()} ({(GoesTo() == goesBefore ? "OK, unchanged" : "FAILED, changed")})");
+    Console.WriteLine($"[confirm] switched OFF: view model = {vm.Review.ConfirmDelete}, saved in settings.json = {File.ReadAllText(SettingsStore.PathIn(data)).Contains("\"ConfirmDelete\": false")}");
+    RowOf("B").DeleteCommand.Execute(null); Pump(500);
+    Console.WriteLine($"[confirm] OFF, delete icon of B: dialog = {vm.Review.ConfirmVisible}, B there = {Exists("B")} ({(!vm.Review.ConfirmVisible && !Exists("B") ? "OK" : "FAILED")}), toast: {vm.Review.Toast}");
+    Shot("o_confirm_off");
+    vm.Review.ConfirmDelete = true; Pump(300);
+    RowOf("C").DeleteCommand.Execute(null); Pump(300);
+    Console.WriteLine($"[confirm] ON again, delete icon of C: dialog = {vm.Review.ConfirmVisible}, C still there = {Exists("C")}, saved = {File.ReadAllText(SettingsStore.PathIn(data)).Contains("\"ConfirmDelete\": true")}");
+    vm.Review.ConfirmNoCommand.Execute(null);
+    try { Directory.Delete(confirmRoot, true); } catch { }
+    app.Dispose();
+    return;
+}
 // SHOT_FOLDERS=1: Process folders (experimental) - a folder whose name fits a category is opened, its files move up, and what is left is summarized
 if (Environment.GetEnvironmentVariable("SHOT_FOLDERS") == "1")
 {
@@ -103,6 +151,7 @@ if (Environment.GetEnvironmentVariable("SHOT_FOLDERS") == "1")
     Put(Path.Combine("Online Course 2024 x265", "Subs", "en.srt"));
     Put(Path.Combine("Barry Specials", "Barry S01E01.mp4")); Put(Path.Combine("Barry Specials", "extra", "bonus.mkv"));
     Put(Path.Combine("Holiday photos", "img.jpg"));
+    Put(Path.Combine("Online Course Extras", "extra.mkv")); Put(Path.Combine("Online Course Extras", "Bonus", "bonus.mkv"));   // everything in it moves: it is empty afterwards
     app.SetTargetFolder(root);
     Console.WriteLine($"[folders] process folders is {(app.Settings.Opt.ProcessFolders ? "on" : "off")} to begin with");
     vm.SelectedTab = MainViewModel.ScanTab; Pump(300);
@@ -118,6 +167,16 @@ if (Environment.GetEnvironmentVariable("SHOT_FOLDERS") == "1")
     app.Result.Decisions.Single(d => d.FileName == "notes.txt").Choose(FileDecision.LeaveHere); Pump(200);
     vm.Review.AskMoveCommand.Execute(null); Pump(300);
     vm.Review.ConfirmYesCommand.Execute(null); Pump(1000);
+    Console.WriteLine($"[folders] the Status window opened by itself after the move: {vm.Review.StatusVisible}; rows = {vm.Review.StatusRows.Count}; Delete empty folders enabled = {vm.Review.CanDeleteEmpty}");
+    Console.WriteLine("[folders] headline: " + vm.Review.StatusHeadline);
+    foreach (var r in vm.Review.StatusRows) Console.WriteLine($"[folders]   | {r.Folder} | {r.Left} | {r.Size} | {r.Status} | {r.Details}");
+    Shot("o_folders_status");
+    vm.Review.DeleteEmptyFoldersCommand.Execute(null); Pump(600);
+    Console.WriteLine($"[folders] after Delete empty folders: window open = {vm.Review.StatusVisible}; rows = {vm.Review.StatusRows.Count}; note: {vm.Review.StatusNote}");
+    Console.WriteLine($"[folders]   \"Online Course Extras\" on the drive: {Directory.Exists(Path.Combine(root, "Online Course Extras"))} (was empty); \"Online Course 2024 x265\" on the drive: {Directory.Exists(Path.Combine(root, "Online Course 2024 x265"))} (still has notes.txt)");
+    Shot("o_folders_status_after");
+    vm.Review.CloseStatusCommand.Execute(null); Pump(300);
+    Shot("o_folders_review_after_close");
     Console.WriteLine("[folders] " + app.LastLeftovers!.Headline);
     foreach (var line in app.LastLeftovers.Lines()) Console.WriteLine("[folders]   " + line);
     Shot("o_folders_after_move");
