@@ -19,7 +19,12 @@
     <Style Selector="Button.thumbbtn Border.playbadge"><Setter Property="Background" Value="#99000000"/></Style>
     <Style Selector="Button.thumbbtn:pointerover Border.playbadge"><Setter Property="Background" Value="#E6000000"/></Style>
   </UserControl.Styles>
-  <Panel>
+  <DockPanel>
+  <!-- Toast (a video that can't be opened): a strip along the bottom edge, in a row of its own - it never covers the screen -->
+  <Border DockPanel.Dock="Bottom" IsVisible="{Binding Toast, Converter={x:Static ObjectConverters.IsNotNull}}"
+          Background="{DynamicResource Ink}" Padding="16,10">
+    <TextBlock Text="{Binding Toast}" Foreground="{DynamicResource Sheet}" TextWrapping="Wrap"/>
+  </Border>
   <ScrollViewer Classes="gutter">
     <Grid RowDefinitions="Auto,*" Margin="12,16,12,12">
       <DockPanel Grid.Row="0" Margin="0,0,0,16">
@@ -168,11 +173,5 @@
       </Grid>
     </Grid>
   </ScrollViewer>
-  <!-- Toast (a video that can't be opened) -->
-  <Border IsVisible="{Binding Toast, Converter={x:Static ObjectConverters.IsNotNull}}"
-          Background="{DynamicResource Ink}" CornerRadius="4" Padding="14,10" Margin="0,0,0,24"
-          HorizontalAlignment="Center" VerticalAlignment="Bottom" MaxWidth="760">
-    <TextBlock Text="{Binding Toast}" Foreground="{DynamicResource Sheet}" TextWrapping="Wrap"/>
-  </Border>
-  </Panel>
+  </DockPanel>
 </UserControl>

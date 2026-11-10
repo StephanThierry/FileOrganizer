@@ -24,7 +24,7 @@
     <Style Selector="Button.icon.del:pointerover /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="Foreground" Value="{DynamicResource GreaseHover}"/><Setter Property="Background" Value="{DynamicResource GreaseWash}"/></Style>
   </UserControl.Styles>
 
-  <Grid RowDefinitions="Auto,Auto,*" Margin="12,16,12,12">
+  <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="12,16,12,12">
     <StackPanel Grid.Row="0" Margin="0,0,0,12">
       <TextBlock Classes="h1" Text="Unmatched"/>
       <TextBlock Classes="muted" TextWrapping="Wrap" Margin="0,4,0,0"
@@ -124,15 +124,14 @@
       </ListBox>
     </Border>
 
-    <!-- Toast -->
-    <Border Grid.Row="2" IsVisible="{Binding Toast, Converter={x:Static ObjectConverters.IsNotNull}}"
-            Background="{DynamicResource Ink}" CornerRadius="4" Padding="14,10" Margin="0,0,0,20"
-            HorizontalAlignment="Center" VerticalAlignment="Bottom" MaxWidth="760">
+    <!-- Toast: a strip along the bottom edge under the bar, in a row of its own - it never covers the screen -->
+    <Border Grid.Row="3" IsVisible="{Binding Toast, Converter={x:Static ObjectConverters.IsNotNull}}"
+            Background="{DynamicResource Ink}" Padding="16,10" Margin="-12,12,-12,-12">
       <TextBlock Text="{Binding Toast}" Foreground="{DynamicResource Sheet}" TextWrapping="Wrap"/>
     </Border>
 
     <!-- Make a rule -->
-    <Grid Grid.RowSpan="3" Margin="-12,-16,-12,-12" Background="#80000000" IsVisible="{Binding RuleVisible}">
+    <Grid Grid.RowSpan="4" Margin="-12,-16,-12,-12" Background="#80000000" IsVisible="{Binding RuleVisible}">
       <!-- The dialog, with the regex guide to its right while a pattern is being made -->
       <Grid ColumnDefinitions="Auto,Auto" ColumnSpacing="16" HorizontalAlignment="Center" VerticalAlignment="Center" MaxHeight="740" Margin="8">
       <Border Classes="panel" Width="580" VerticalAlignment="Center" Padding="24">
@@ -203,7 +202,7 @@
       </Grid>
     </Grid>
     <!-- Confirmation before deleting -->
-    <Grid Grid.RowSpan="3" Margin="-12,-16,-12,-12" Background="#80000000" IsVisible="{Binding ConfirmVisible}">
+    <Grid Grid.RowSpan="4" Margin="-12,-16,-12,-12" Background="#80000000" IsVisible="{Binding ConfirmVisible}">
       <Border Classes="panel" Width="580" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="24">
         <StackPanel Spacing="12">
           <TextBlock Classes="h2" Text="{Binding ConfirmTitle}" TextWrapping="Wrap"/>

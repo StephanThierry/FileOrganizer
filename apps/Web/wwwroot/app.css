@@ -94,11 +94,12 @@ input[type=text], input[type=number], input[type=search], select {
 input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--grease); }
 input[type=range] { accent-color: var(--accent); width: 100%; }
 
+/* A message: a strip along the bottom edge of the window, not a box over the screen. With a bottom bar it is shown in the bar (below its buttons). */
 .toast {
-  position: fixed; left: 50%; transform: translateX(-50%); bottom: 96px; z-index: 40;
-  background: var(--ink); color: var(--sheet); padding: 10px 16px; border-radius: var(--radius-control);
-  box-shadow: 0 6px 24px rgba(0,0,0,.25); max-width: min(680px, 90vw);
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+  background: var(--ink); color: var(--sheet); padding: 10px 20px; text-align: center;
 }
+.actionbar .toast { position: static; }
 .toast button.link { color: inherit; text-decoration: underline; margin-left: 12px; }
 
 /* ---------- Review ---------- */
