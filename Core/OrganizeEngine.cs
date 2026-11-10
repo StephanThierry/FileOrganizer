@@ -124,11 +124,7 @@ public sealed class OrganizeEngine : IDisposable
         var videoExtensions = new HashSet<string>(settings.Opt.VideoExtensions ?? Options.DefaultVideoExtensions, StringComparer.OrdinalIgnoreCase);
 
         Report(new OrganizeProgress { Phase = OrganizePhase.Listing, Message = "Listing the files", Folder = folder });
-        var files = Directory.GetFiles(folder)
-            .Select(Path.GetFileName).OfType<string>()
-            .Where(f => !OwnFiles.Contains(f))
-            .OrderBy(f => f, StringComparer.OrdinalIgnoreCase)
-            .ToList();
+        var files = ListEntries(folder, settings);
         var cache = OcrCache.Load(folder);
 
         int matched = 0, unmatched = 0, corrupt = 0, cacheHits = 0, ocrDone = 0, done = 0;
@@ -136,7 +132,8 @@ public sealed class OrganizeEngine : IDisposable
         int videosSeen = 0;
         string? lastThumb = null, lastThumbVideo = null;
         var recent = new List<string>();
-        int remainingUncachedVideos = files.Count(f => videoExtensions.Contains(Path.GetExtension(f)) && !cache.ContainsKey(f));
+        // (The files inside opened folders are not read by OCR: the folder's name says where they go)
+        int remainingUncachedVideos = files.Count(f => f.FolderName == null && videoExtensions.Contains(Path.GetExtension(f.Name)) && !cache.ContainsKey(f.Relative));
 
         OrganizeProgress Snapshot(string file, string stage, int frame = 0, int frames = 0, OrganizePhase phase = OrganizePhase.Scanning)
         {
@@ -160,19 +157,21 @@ public sealed class OrganizeEngine : IDisposable
         bool cancelled = false;
         try
         {
-            foreach (var file in files)
+            foreach (var entry in files)
             {
                 ct.ThrowIfCancellationRequested();
-                string full = Path.Combine(folder, file);
-                var d = new FileDecision { FileName = file, IsVideo = videoExtensions.Contains(Path.GetExtension(file)) };
+                string file = entry.Name;
+                string key = entry.Relative;   // what is shown, and the key in the OCR cache (the name for a file directly in the folder)
+                string full = Path.Combine(folder, key);
+                var d = new FileDecision { FileName = file, SubFolder = entry.SubFolder, FolderName = entry.FolderName, IsVideo = videoExtensions.Contains(Path.GetExtension(file)) };
                 if (d.IsVideo) videosSeen++;
 
                 // 1. The file name
-                Report(Snapshot(file, "Filename"));
+                Report(Snapshot(key, "Filename"));
                 if (!Decide(d, settings))
                 {
                     // 2. The tags (title, comment), and a new name from them
-                    Report(Snapshot(file, "Tags"));
+                    Report(Snapshot(key, "Tags"));
                     var tags = MediaMetadata.Read(full);
                     d.Title = tags.Title;
                     d.Comment = tags.Comment;
@@ -186,24 +185,24 @@ public sealed class OrganizeEngine : IDisposable
                             d.RenameSource = !string.IsNullOrWhiteSpace(tags.Title) ? "Title" : "Comment";
                         }
                     }
-                    if (!string.IsNullOrWhiteSpace(tags.Title)) Say($"* Title Found '{tags.Title}' for file: {file}");
-                    if (!string.IsNullOrWhiteSpace(tags.Comment)) Say($"* Comment Found '{tags.Comment}' for file: {file}");
+                    if (!string.IsNullOrWhiteSpace(tags.Title)) Say($"* Title Found '{tags.Title}' for file: {key}");
+                    if (!string.IsNullOrWhiteSpace(tags.Comment)) Say($"* Comment Found '{tags.Comment}' for file: {key}");
 
                     if (!Decide(d, settings) && d.IsVideo)
                     {
                         // 3. The deep scan: text in the video's frames
                         VideoOcrResult read;
                         // A video that was once found unreadable is tried again: it may have been a false alarm that is fixed since
-                        if (cache.TryGetValue(file, out var cached) && !cached.IsCorrupt)
+                        if (cache.TryGetValue(key, out var cached) && !cached.IsCorrupt)
                         {
-                            Say($"[Cache Hit] Using existing OCR data for: {file}");
+                            Say($"[Cache Hit] Using existing OCR data for: {key}");
                             read = cached;
                             d.FromCache = true;
                             cacheHits++;
                         }
                         else
                         {
-                            Say($"[Deep Scan] {file}...");
+                            Say($"[Deep Scan] {key}...");
                             ocr ??= ocrFactory();
                             var started = Stopwatch.StartNew();
                             Func<string, bool> stopAt = line => settings.Opt.StopOcrAtFirstMatch && RuleMatcher.Match(line, settings) != null;
@@ -215,9 +214,9 @@ public sealed class OrganizeEngine : IDisposable
                                     recent.Add(line);
                                 }
                                 while (recent.Count > 12) recent.RemoveAt(0);
-                                Report(Snapshot(file, "Reading video", frame.Frame, frame.Frames));
+                                Report(Snapshot(key, "Reading video", frame.Frame, frame.Frames));
                             }, ct);
-                            cache[file] = read;
+                            cache[key] = read;
                             OcrCache.Save(folder, cache);
                             ocrDone++;
                             remainingUncachedVideos--;
@@ -233,9 +232,9 @@ public sealed class OrganizeEngine : IDisposable
                 result.Decisions.Add(d);
                 done++;
                 if (d.Source == MatchSource.Corrupt) corrupt++;
-                if (d.IsMatched) { matched++; Say($"[Match] {d.FileName} -> {d.Category} ({d.Trigger})"); }
-                else { unmatched++; Say($"[Unmatched] {d.FileName}"); }
-                Report(Snapshot(file, ""));
+                if (d.IsMatched) { matched++; Say($"[Match] {key} -> {d.Category} ({d.Trigger})"); }
+                else { unmatched++; Say($"[Unmatched] {key}"); }
+                Report(Snapshot(key, ""));
             }
         }
         catch (OperationCanceledException)
@@ -253,6 +252,44 @@ public sealed class OrganizeEngine : IDisposable
         return result;
     }
 
+    /// <summary>A file to look at: where it is inside the scanned folder, and the folder that was opened for it (null: it is directly in the scanned folder).</summary>
+    private sealed record ScanEntry(string Name, string SubFolder, string? FolderName)
+    {
+        public string Relative => SubFolder.Length == 0 ? Name : Path.Combine(SubFolder, Name);
+    }
+
+    /// <summary>
+    /// The files directly in the folder and, with Process folders on, the files (at any depth) of each folder directly inside it whose name
+    /// fits a category. A category's own folder is never opened: what is in it has been organized already.
+    /// </summary>
+    private static List<ScanEntry> ListEntries(string folder, Settings settings)
+    {
+        var list = Directory.GetFiles(folder)
+            .Select(Path.GetFileName).OfType<string>()
+            .Where(f => !OwnFiles.Contains(f))
+            .OrderBy(f => f, StringComparer.OrdinalIgnoreCase)
+            .Select(f => new ScanEntry(f, "", null))
+            .ToList();
+        if (!settings.Opt.ProcessFolders) return list;
+
+        var categoryFolders = new HashSet<string>(settings.Categories.Select(c => c.Name).Append(CorruptCategory), StringComparer.OrdinalIgnoreCase);
+        var options = new EnumerationOptions { RecurseSubdirectories = true, IgnoreInaccessible = true, AttributesToSkip = 0, ReturnSpecialDirectories = false };
+        foreach (var dir in Directory.GetDirectories(folder).OrderBy(d => d, StringComparer.OrdinalIgnoreCase))
+        {
+            string name = Path.GetFileName(dir);
+            if (categoryFolders.Contains(name)) continue;               // a category's own folder: organized already
+            if (RuleMatcher.Match(name, settings) == null) continue;    // its name fits no category
+            try
+            {
+                foreach (var relative in Directory.EnumerateFiles(dir, "*", options).Select(f => Path.GetRelativePath(folder, f))
+                             .Where(r => !OwnFiles.Contains(Path.GetFileName(r))).OrderBy(r => r, StringComparer.OrdinalIgnoreCase))
+                    list.Add(new ScanEntry(Path.GetFileName(relative), Path.GetDirectoryName(relative) ?? "", name));
+            }
+            catch (Exception) { /* an unreadable folder is left out */ }
+        }
+        return list;
+    }
+
     /// <summary>
     /// Decides a file from what is known about it, in this order: the file name, the title tag, the comment tag, a video that
     /// can't be read (_CHECK_), the text found in the video. Facts that have not been read yet are simply empty, so the same
@@ -267,6 +304,11 @@ public sealed class OrganizeEngine : IDisposable
 
         if (RuleMatcher.Match(d.Title, settings) is { } t) return Set(d, t.Category, MatchSource.Title, $"Title Tag: {t.Trigger}");
         if (RuleMatcher.Match(d.Comment, settings) is { } c) return Set(d, c.Category, MatchSource.Comment, $"Comment Tag: {c.Trigger}");
+
+        // In a folder that was opened (Process folders): a file with no match of its own goes with the folder, by the folder's name. So the text
+        // of a video in it is not read: its folder already says where it belongs.
+        if (d.FolderName != null && RuleMatcher.Match(d.FolderName, settings) is { } f)
+            return Set(d, f.Category, MatchSource.Folder, $"Folder: {d.FolderName} ({f.Trigger})");
 
         if (d.OcrCorrupt) return Set(d, CorruptCategory, MatchSource.Corrupt, "Hard Error: Video stream unreadable.");
 

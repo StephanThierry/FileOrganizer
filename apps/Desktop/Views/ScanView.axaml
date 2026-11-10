@@ -63,6 +63,9 @@
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
+              <CheckBox IsChecked="{Binding ProcessFolders}" IsEnabled="{Binding !IsRunning}" Content="Process folders (experimental)"/>
+              <TextBlock Classes="muted small" TextWrapping="Wrap" Margin="26,-6,0,0"
+                         Text="Folders whose name fits a category (like &quot;President Curtis S01E12 x265&quot; for the category President Curtis) are opened: every file inside, at any depth, is checked like the other files (a file with no match of its own goes with the folder) and moved up into the category's folder. Nothing is deleted: after the move, Review lists what is left in those folders."/>
               <Border IsVisible="{Binding HasError}" Background="{DynamicResource GreaseWash}" CornerRadius="6" Padding="12,10">
                 <TextBlock Text="{Binding Error}" TextWrapping="Wrap"/>
               </Border>

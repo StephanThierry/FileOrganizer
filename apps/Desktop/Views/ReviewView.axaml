@@ -27,12 +27,28 @@
                  Text="Where each file will go, and why. Choose another folder for a file, or leave it where it is. Then move the files now, or write a script and run it yourself."/>
     </StackPanel>
 
-    <Border Grid.Row="1" IsVisible="{Binding HasScripts}" Background="{DynamicResource KeepWash}" CornerRadius="10" Padding="16,12" Margin="0,0,0,12">
-      <StackPanel Spacing="6">
-        <SelectableTextBlock Text="{Binding ScriptsText}" TextWrapping="Wrap"/>
-        <Button Content="Open the folder" Command="{Binding OpenScriptsFolderCommand}" HorizontalAlignment="Left"/>
-      </StackPanel>
-    </Border>
+    <StackPanel Grid.Row="1">
+      <Border IsVisible="{Binding HasScripts}" Background="{DynamicResource KeepWash}" CornerRadius="10" Padding="16,12" Margin="0,0,0,12">
+        <StackPanel Spacing="6">
+          <SelectableTextBlock Text="{Binding ScriptsText}" TextWrapping="Wrap"/>
+          <Button Content="Open the folder" Command="{Binding OpenScriptsFolderCommand}" HorizontalAlignment="Left"/>
+        </StackPanel>
+      </Border>
+      <!-- Process folders: what is left in the folders that were opened, after the moves and deletes -->
+      <Border IsVisible="{Binding HasLeftovers}" Background="{DynamicResource Table}" CornerRadius="10" Padding="16,12" Margin="0,0,0,12">
+        <StackPanel Spacing="6">
+          <TextBlock Text="Left in the folders that were opened" FontWeight="SemiBold"/>
+          <TextBlock Text="{Binding LeftoverHeadline}" TextWrapping="Wrap"/>
+          <ItemsControl ItemsSource="{Binding LeftoverLines}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="x:String">
+                <SelectableTextBlock Text="{Binding}" TextWrapping="Wrap" Classes="muted small" Margin="0,2"/>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </Border>
+    </StackPanel>
 
     <WrapPanel Grid.Row="2" Margin="0,0,0,10" IsVisible="{Binding HasRows}">
       <TextBlock Text="Show" VerticalAlignment="Center" Margin="0,0,8,6"/>
@@ -96,6 +112,7 @@
                   </StackPanel>
                   <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="3">
                     <TextBlock Text="{Binding FileName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock Text="{Binding FromFolderText}" Classes="muted small" TextTrimming="CharacterEllipsis" IsVisible="{Binding HasFromFolder}"/>
                     <StackPanel Orientation="Horizontal" Spacing="8">
                       <Border Classes="sourcechip"><TextBlock Text="{Binding SourceText}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource Muted}"/></Border>
                       <TextBlock Text="{Binding Trigger}" Classes="muted small" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
