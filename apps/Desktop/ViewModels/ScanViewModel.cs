@@ -30,6 +30,9 @@ public partial class ScanViewModel : ViewModelBase
     public Func<Task<string?>>? PickFolder { get; set; }
 
     [ObservableProperty] private string folder = "";
+    /// <summary>"Process folders (experimental)": folders whose name fits a category are opened. Kept in settings.json.</summary>
+    [ObservableProperty] private bool processFolders;
+    partial void OnProcessFoldersChanged(bool value) => app.SetProcessFolders(value);
     [ObservableProperty] private bool isRunning;
     [ObservableProperty] private bool stopping;
     [ObservableProperty] private bool isIdle = true;
@@ -70,6 +73,8 @@ public partial class ScanViewModel : ViewModelBase
         this.app = app;
         this.main = main;
         Folder = app.TargetFolder;
+        ProcessFolders = app.Settings.Opt.ProcessFolders;
+        app.SettingsChanged += () => Dispatcher.UIThread.Post(() => ProcessFolders = app.Settings.Opt.ProcessFolders);
         Thumbs.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasThumbs));
         app.Engine.ProgressChanged += _ =>
         {

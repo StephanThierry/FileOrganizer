@@ -47,6 +47,8 @@
                         }
                     </ul>
                 }
+                <label class="inline" style="margin-top:12px"><input type="checkbox" checked="@App.Settings.Opt.ProcessFolders" disabled="@running" @onchange="e => App.SetProcessFolders((bool)e.Value!)" /> Process folders (experimental)</label>
+                <p class="muted" style="margin:4px 0 0 26px">Folders whose name fits a category (like "President Curtis S01E12 x265" for the category President Curtis) are opened: every file inside, at any depth, is checked like the other files (a file with no match of its own goes with the folder) and moved up into the category's folder. Nothing is deleted: after the move, Review lists what is left in those folders.</p>
                 @if (error != null) { <div class="notice warn"><p>@error</p></div> }
             </section>
 

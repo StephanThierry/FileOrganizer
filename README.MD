@@ -20,6 +20,13 @@ The processor evaluates every file in the target folder using a 3-step deep scan
 2. **Metadata Extraction:** Reads media tags (Title, Comments) using TagLib. If tags exist, it proposes a file rename based on the tags and checks the tags against your rules.
 3. **Video OCR Deep Scan:** For video files (`.mp4`, `.mkv`, etc.), it extracts sample frames across the video and reads on-screen text (logos, website watermarks, titles) using PaddleOCR's PP-OCRv5 models running locally on ONNX Runtime ([RapidOCRSharpOnnx](https://github.com/meloht/RapidOCRSharpOnnx)). This works on Windows, Linux and macOS. The extracted text is then checked against your rules.
 
+**Process folders (experimental).** Normally only the files directly in the chosen folder are looked at. With the switch **Process folders (experimental)** on the Scan screen (saved as `Options.ProcessFolders` in `settings.json`, off by default), a folder inside it whose *name* fits a category - for example `President Curtis S01E12 x265` for the category `President Curtis` - is opened too:
+* Every file in it, at any depth, is organized like the other files: first its own file name and tags; a file with no match of its own goes with the folder (Review shows "Folder name" as the reason). The text of videos in such a folder is not read by OCR, because the folder's name already says where they belong.
+* The files are moved up into the category's folder inside the scanned folder (flat: the sub-folders are not kept). As always nothing is overwritten: if two files have the same name, the second one stays where it is and is reported.
+* A folder that is a category's own folder (or `_CHECK_`) is never opened, and a folder whose name fits no category is left alone.
+* Nothing is deleted. After the files are moved (or deleted in Review), Review lists what is left in each folder that was opened - the files, the empty sub-folders, folders that are empty or gone - so you can clean up yourself.
+* The move scripts use the path inside the folder (`mv -n -- 'folder/sub/file' 'Category/'`), and `unmatched_files.txt` lists such files with that path.
+
 **Outputs Generated:**
 * `move_files.ps1` / `move_files.sh`: A script to move files into categorized subfolders.
 * `rename_files.ps1` / `rename_files.sh`: A script to rename files based on discovered Title/Comment metadata.

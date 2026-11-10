@@ -70,7 +70,7 @@ public sealed class AppController : IDisposable
         catch (Exception) { /* a broken state file is just forgotten */ }
 
         Engine = new OrganizeEngine(() => new OpenCvVideoOcr(ModelsFolder)) { ThumbFolder = ThumbFolder };
-        Engine.Completed += result => { Result = result; ResultChanged?.Invoke(); };
+        Engine.Completed += result => { Result = result; LastLeftovers = null; ResultChanged?.Invoke(); };
     }
 
     public static AppController Open(string dataFolder)
@@ -128,6 +128,29 @@ public sealed class AppController : IDisposable
     }
 
     public void StopScan() => Engine.Cancel();
+
+    /// <summary>
+    /// Switches "Process folders (experimental)" on or off for the next scans and keeps the choice in settings.json. (Not while settings.json
+    /// is unreadable: saving would replace it.)
+    /// </summary>
+    public void SetProcessFolders(bool on)
+    {
+        if (SettingsError != null || Settings.Opt.ProcessFolders == on) return;
+        var s = Settings.Clone();
+        s.Opt.ProcessFolders = on;
+        try { SettingsStore.Save(DataFolder, s); } catch (Exception) { return; }
+        Settings = s;
+        SettingsChanged?.Invoke();
+    }
+
+    /// <summary>What is left, after moves and deletes, in the folders the scan opened ("Process folders"); null when it opened none or nothing was done yet.</summary>
+    public LeftoverReport? LastLeftovers { get; private set; }
+
+    private void RefreshLeftovers()
+    {
+        var opened = Result?.Decisions.Where(d => d.FolderName != null).Select(d => d.FolderName!).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        LastLeftovers = Result == null || opened == null || opened.Count == 0 ? null : FolderLeftovers.Build(Result.Folder, opened);
+    }
 
     // ---------- The rules ----------
 
@@ -202,6 +225,7 @@ public sealed class AppController : IDisposable
     {
         if (Result == null) return new MoveReport(0, 0, 0, 0, new List<string>());
         var report = MoveExecutor.Apply(Result.Folder, Result.Decisions, alsoRename);
+        RefreshLeftovers();
         ResultChanged?.Invoke();
         return report;
     }
@@ -211,6 +235,7 @@ public sealed class AppController : IDisposable
     {
         if (Result == null || d.Done || d.EffectiveCategory == null) return new MoveReport(0, 0, 0, 0, new List<string>());
         var report = MoveExecutor.Apply(Result.Folder, new[] { d }, alsoRename);
+        RefreshLeftovers();
         ResultChanged?.Invoke();
         return report;
     }
@@ -242,6 +267,7 @@ public sealed class AppController : IDisposable
             string name = Path.GetFileName(path);
             bool recoverable = RecycleBin.Delete(path);
             Result.Decisions.Remove(d);
+            if (d.FolderName != null) RefreshLeftovers();   // it was in a folder that was opened: what is left there changed
             ResultChanged?.Invoke();
             return (true, recoverable ? $"Moved {name} to the {RecycleBin.Name}." : $"Deleted {name} permanently: this location has no {RecycleBin.Name}.");
         }
@@ -255,7 +281,7 @@ public sealed class AppController : IDisposable
     public string? PathOf(FileDecision d)
     {
         if (Result == null) return null;
-        return d.MovedTo ?? Path.Combine(Result.Folder, d.FileName);
+        return d.MovedTo ?? Path.Combine(Result.Folder, d.RelativePath);
     }
 
     /// <summary>A small picture of a video (made on first use), or null.</summary>

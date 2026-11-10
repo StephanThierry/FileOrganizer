@@ -62,6 +62,8 @@ button.icon.del:hover:not(:disabled) { color: var(--grease-hover); background: v
 .guide-result { background: var(--table); border-radius: 6px; padding: 8px 10px; min-height: 2.4em; white-space: pre-wrap; overflow-wrap: anywhere; }
 .guide-result mark { background: color-mix(in srgb, var(--accent) 30%, transparent); color: inherit; font-weight: 700; border-radius: 2px; }
 .term-list { margin: 0 0 8px 24px; }
+/* What is left in the folders that were opened (Process folders) */
+.leftover-list { margin: .4rem 0 0; padding-left: 1.2rem; font-size: .85rem; color: var(--muted); overflow-wrap: anywhere; }
 /* The readings of a text, in the dialog: does the rule being made catch each? */
 .variants { margin: 6px 0 10px; }
 .variant-list { max-height: 150px; overflow: auto; background: var(--table); border-radius: 6px; padding: 6px 8px; margin-top: 4px; }

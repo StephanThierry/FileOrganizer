@@ -92,6 +92,40 @@ void WaitFor(Func<bool> condition, int seconds, string what)
 }
 
 // --- The screens ---
+// SHOT_FOLDERS=1: Process folders (experimental) - a folder whose name fits a category is opened, its files move up, and what is left is summarized
+if (Environment.GetEnvironmentVariable("SHOT_FOLDERS") == "1")
+{
+    string root = Path.Combine(work, "folders");
+    void Put(string relative) { var path = Path.Combine(root, relative); Directory.CreateDirectory(Path.GetDirectoryName(path)!); File.WriteAllText(path, "x"); }
+    Put("loose.txt");
+    Put(Path.Combine("Online Course 2024 x265", "part1.mkv")); Put(Path.Combine("Online Course 2024 x265", "part2.mkv"));
+    Put(Path.Combine("Online Course 2024 x265", "notes.txt")); Put(Path.Combine("Online Course 2024 x265", "readme.nfo"));
+    Put(Path.Combine("Online Course 2024 x265", "Subs", "en.srt"));
+    Put(Path.Combine("Barry Specials", "Barry S01E01.mp4")); Put(Path.Combine("Barry Specials", "extra", "bonus.mkv"));
+    Put(Path.Combine("Holiday photos", "img.jpg"));
+    app.SetTargetFolder(root);
+    Console.WriteLine($"[folders] process folders is {(app.Settings.Opt.ProcessFolders ? "on" : "off")} to begin with");
+    vm.SelectedTab = MainViewModel.ScanTab; Pump(300);
+    vm.Scan.ProcessFolders = true; Pump(300);
+    Console.WriteLine($"[folders] after the switch: on = {app.Settings.Opt.ProcessFolders}, saved in settings.json = {File.ReadAllText(SettingsStore.PathIn(data)).Contains("\"ProcessFolders\": true")}");
+    Shot("o_folders_scan_switch");
+    vm.Scan.StartCommand.Execute(null);
+    WaitFor(() => !app.Engine.IsRunning && app.Result != null, 60, "the scan");
+    Pump(500);
+    foreach (var d in app.Result!.Decisions) Console.WriteLine($"[folders]   {d.RelativePath} -> {d.Category ?? "-"} ({d.Source})");
+    vm.SelectedTab = MainViewModel.ReviewTab; Pump(800); Shot("o_folders_review");
+    // the user leaves notes.txt where it is
+    app.Result.Decisions.Single(d => d.FileName == "notes.txt").Choose(FileDecision.LeaveHere); Pump(200);
+    vm.Review.AskMoveCommand.Execute(null); Pump(300);
+    vm.Review.ConfirmYesCommand.Execute(null); Pump(1000);
+    Console.WriteLine("[folders] " + app.LastLeftovers!.Headline);
+    foreach (var line in app.LastLeftovers.Lines()) Console.WriteLine("[folders]   " + line);
+    Shot("o_folders_after_move");
+    Console.WriteLine("[folders] category folders now: " + string.Join(", ", Directory.GetDirectories(root).Select(Path.GetFileName)));
+    Console.WriteLine("[folders] in Tutorials: " + string.Join(", ", Directory.GetFiles(Path.Combine(root, "Tutorials")).Select(Path.GetFileName)));
+    app.Dispose();
+    return;
+}
 vm.SelectedTab = MainViewModel.RulesTab; vm.Rules.FilterText = "Season S02E05 of the show"; Pump(500); Shot("o_rules");
 // The regex guide: opens beside a Regex rule, with a test text
 vm.Rules.Selected = vm.Rules.Categories.First(c => c.Name == "Series");

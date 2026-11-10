@@ -79,6 +79,7 @@
                   <Button Classes="namelink" Command="{Binding NameCommand}" ToolTip.Tip="Make a rule from the file name">
                     <TextBlock Text="{Binding FileName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
                   </Button>
+                  <TextBlock Text="{Binding FromFolderText}" Classes="muted small" TextTrimming="CharacterEllipsis" IsVisible="{Binding HasFromFolder}"/>
                   <TextBlock Text="No text was found in the file name, the tags or the video." Classes="muted small" IsVisible="{Binding !HasLines}"/>
                   <ItemsControl ItemsSource="{Binding Lines}">
                     <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel>

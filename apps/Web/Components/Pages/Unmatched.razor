@@ -42,6 +42,7 @@
                     </div>
                     <div class="info">
                         <button class="namelink" title="Make a rule from the file name" @onclick="() => OpenRule(System.IO.Path.GetFileNameWithoutExtension(d.FileName), null, d)">@d.FileName</button>
+                        @if (d.SubFolder.Length > 0) { <div class="muted">in @d.SubFolder</div> }
                         <div class="chips">
                             @if (d.Title.Length > 0) { <span class="chip-wrap">@Tick(d, d.Title)<button class="chip btn" @onclick="() => OpenRule(d.Title, null, d)"><small>Title tag</small>@d.Title</button></span> }
                             @if (d.Comment.Length > 0) { <span class="chip-wrap">@Tick(d, d.Comment)<button class="chip btn" @onclick="() => OpenRule(d.Comment, null, d)"><small>Comment tag</small>@d.Comment</button></span> }

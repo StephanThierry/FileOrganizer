@@ -32,6 +32,20 @@ public partial class ReviewViewModel : ViewModelBase
     [ObservableProperty] private string? scriptsText;
     [ObservableProperty] private string? scriptsFolder;
 
+    // What is left in the folders that were opened (Process folders), after files were moved or deleted
+    public ObservableCollection<string> LeftoverLines { get; } = new();
+    [ObservableProperty] private bool hasLeftovers;
+    [ObservableProperty] private string leftoverHeadline = "";
+
+    private void ShowLeftovers()
+    {
+        var report = app.LastLeftovers;
+        HasLeftovers = report != null;
+        LeftoverHeadline = report?.Headline ?? "";
+        LeftoverLines.Clear();
+        if (report != null) foreach (var line in report.Lines()) LeftoverLines.Add(line);
+    }
+
     public bool HasScripts => ScriptsText != null;
     public bool HasRenames => app.Result?.Decisions.Any(d => d.RenameTo != null) ?? false;
 
@@ -74,6 +88,7 @@ public partial class ReviewViewModel : ViewModelBase
         foreach (var name in wanted.Select(d => d.Category ?? d.OverrideCategory!).Distinct().OrderBy(n => n, StringComparer.OrdinalIgnoreCase)) Filters.Add(name);
         SelectedFilter = Filters.Contains(current) ? current : AllCategories;
         OnPropertyChanged(nameof(HasRenames));
+        ShowLeftovers();
         Filter();
     }
 
@@ -170,6 +185,9 @@ public partial class FileRow : ObservableObject
     public ObservableCollection<string> Choices { get; }
 
     public string FileName => Decision.FileName;
+    /// <summary>For a file found inside a folder that was opened: where it is (shown under the name).</summary>
+    public string FromFolderText => Decision.SubFolder.Length > 0 ? "in " + Decision.SubFolder : "";
+    public bool HasFromFolder => Decision.SubFolder.Length > 0;
     public string Trigger => Decision.Trigger;
     public string? RuleCategory => Decision.Category;
     public bool IsVideo => Decision.IsVideo;
@@ -188,6 +206,7 @@ public partial class FileRow : ObservableObject
         MatchSource.Comment => "Comment tag",
         MatchSource.Ocr => "Text in the video",
         MatchSource.Corrupt => "Can't be read",
+        MatchSource.Folder => "Folder name",
         _ => Decision.OverrideCategory != null ? "Your choice" : "",
     };
 

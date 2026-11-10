@@ -21,6 +21,18 @@
         </div>
     }
 
+    @* Process folders: what is left in the folders that were opened, after the moves and deletes *@
+    @if (App.LastLeftovers is { } leftovers)
+    {
+        <div class="result" role="status">
+            <p><strong>Left in the folders that were opened</strong></p>
+            <p>@leftovers.Headline</p>
+            <ul class="leftover-list">
+                @foreach (var line in leftovers.Lines()) { <li>@line</li> }
+            </ul>
+        </div>
+    }
+
     @if (App.Result == null)
     {
         <div class="empty">
@@ -72,6 +84,7 @@
                     </div>
                     <div class="info">
                         <div class="name">@d.FileName</div>
+                        @if (d.SubFolder.Length > 0) { <div class="muted">in @d.SubFolder</div> }
                         <div class="why"><span class="chip">@Source(d)</span> <span class="muted">@d.Trigger</span></div>
                         @if (d.RenameTo != null) { <div class="rename">@d.RenameSource tag: @d.RenameTo</div> }
                     </div>
@@ -187,6 +200,7 @@
         MatchSource.Comment => "Comment tag",
         MatchSource.Ocr => "Text in the video",
         MatchSource.Corrupt => "Can't be read",
+        MatchSource.Folder => "Folder name",
         _ => d.OverrideCategory != null ? "Your choice" : "",
     };
 

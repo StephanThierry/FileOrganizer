@@ -131,16 +131,33 @@ public sealed class Options
     /// <summary>Stop reading frames of a video as soon as one frame has text that matches a rule (faster).</summary>
     public bool StopOcrAtFirstMatch { get; set; } = true;
 
+    /// <summary>
+    /// Experimental: a folder inside the scanned folder whose name fits a category (like "President Curtis S01E12 x265" for the
+    /// category "President Curtis") is opened: every file in it, at any depth, is organized like the files of the scanned folder
+    /// (a file with no match of its own goes with the folder) and moved up into the category's folder.
+    /// </summary>
+    public bool ProcessFolders { get; set; }
+
     public static readonly string[] DefaultVideoExtensions = { ".mp4", ".mpeg", ".mpv", ".flv", ".mkv", ".avi", ".mov", ".wmv" };
 }
 
 /// <summary>Where a file's category came from.</summary>
-public enum MatchSource { None, Filename, Title, Comment, Ocr, Corrupt }
+public enum MatchSource { None, Filename, Title, Comment, Ocr, Corrupt, Folder }
 
 /// <summary>What the engine found out about one file, and what it decided.</summary>
 public sealed class FileDecision
 {
     public string FileName { get; set; } = "";
+
+    /// <summary>Where the file is, inside the scanned folder: empty for a file directly in it, else the path of its folder (Process folders).</summary>
+    public string SubFolder { get; set; } = "";
+
+    /// <summary>The folder inside the scanned folder that was opened because its name fits a category (null: the file was not in one).</summary>
+    public string? FolderName { get; set; }
+
+    /// <summary>The file's path inside the scanned folder.</summary>
+    [JsonIgnore] public string RelativePath => string.IsNullOrEmpty(SubFolder) ? FileName : Path.Combine(SubFolder, FileName);
+
     public bool IsVideo { get; set; }
 
     // --- Facts (read from the file) ---

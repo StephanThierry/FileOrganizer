@@ -36,8 +36,8 @@ public static class ScriptWriter
         {
             string category = d.EffectiveCategory!;
             writer.WriteLine(IsWindows
-                ? $"[System.IO.File]::Move((P {PsQuote(d.FileName)}), (P {PsQuote(category)} {PsQuote(d.FileName)}))"
-                : $"mv -n -- {ShQuote(d.FileName)} {ShQuote(category + "/")}");
+                ? $"[System.IO.File]::Move((P {PsQuote(d.RelativePath)}), (P {PsQuote(category)} {PsQuote(d.FileName)}))"
+                : $"mv -n -- {ShQuote(d.RelativePath)} {ShQuote(category + "/")}");
             string why = d.OverrideCategory != null ? "Chosen by you" : d.Trigger;
             writer.WriteLine($"# Triggered: {why.Replace('\r', ' ').Replace('\n', ' ')}");
         }
@@ -58,8 +58,8 @@ public static class ScriptWriter
         foreach (var d in renames)
         {
             writer.WriteLine(IsWindows
-                ? $"[System.IO.File]::Move((P {PsQuote(d.FileName)}), (P {PsQuote(d.RenameTo!)}))"
-                : $"mv -n -- {ShQuote(d.FileName)} {ShQuote(d.RenameTo!)}");
+                ? $"[System.IO.File]::Move((P {PsQuote(d.RelativePath)}), (P {PsQuote(Path.Combine(d.SubFolder, d.RenameTo!))}))"
+                : $"mv -n -- {ShQuote(d.RelativePath)} {ShQuote(Path.Combine(d.SubFolder, d.RenameTo!))}");
             writer.WriteLine($"# Source: {d.RenameSource}");
             writer.WriteLine();
         }
@@ -77,7 +77,7 @@ public static class ScriptWriter
         using var writer = new StreamWriter(path);
         foreach (var d in unmatched)
         {
-            writer.WriteLine(d.FileName + "...");
+            writer.WriteLine(d.RelativePath + "...");
             if (!string.IsNullOrWhiteSpace(d.Title)) writer.WriteLine($"    Metadata Title: \"{d.Title}\"");
             if (!string.IsNullOrWhiteSpace(d.Comment)) writer.WriteLine($"    Metadata Comment: \"{d.Comment}\"");
             foreach (var line in OcrText.Distinct(d.OcrLines)) writer.WriteLine($"    OCR Detected Text: \"{line}\"");
@@ -168,21 +168,21 @@ public static class MoveExecutor
             bool renames = !string.Equals(newName, d.FileName, StringComparison.Ordinal);
             if (category == null && !renames) continue;
 
-            string source = Path.Combine(folder, d.FileName);
+            string source = Path.Combine(folder, d.RelativePath);
             try
             {
-                if (!File.Exists(source)) { failed++; messages.Add($"{d.FileName}: the file is not there any more."); continue; }
-                string targetFolder = folder;
+                if (!File.Exists(source)) { failed++; messages.Add($"{d.RelativePath}: the file is not there any more."); continue; }
+                string targetFolder = Path.Combine(folder, d.SubFolder);   // a file that only gets a new name is renamed where it is
                 if (category != null)
                 {
                     // A category is a folder inside the scanned folder: never a path that leads out of it
-                    if (!FolderNames.IsSafe(category)) { failed++; messages.Add($"{d.FileName}: \"{category}\" is not a usable folder name."); continue; }
+                    if (!FolderNames.IsSafe(category)) { failed++; messages.Add($"{d.RelativePath}: \"{category}\" is not a usable folder name."); continue; }
                     targetFolder = Path.Combine(folder, category);
                     Directory.CreateDirectory(targetFolder);
                 }
-                if (!FolderNames.IsSafe(newName)) { failed++; messages.Add($"{d.FileName}: \"{newName}\" is not a usable file name."); continue; }
+                if (!FolderNames.IsSafe(newName)) { failed++; messages.Add($"{d.RelativePath}: \"{newName}\" is not a usable file name."); continue; }
                 string target = Path.Combine(targetFolder, newName);
-                if (File.Exists(target)) { skipped++; messages.Add($"{d.FileName}: {Path.Combine(category ?? "", newName)} exists already, so it stays."); continue; }
+                if (File.Exists(target)) { skipped++; messages.Add($"{d.RelativePath}: {Path.Combine(category ?? d.SubFolder, newName)} exists already, so it stays."); continue; }
 
                 File.Move(source, target);
                 d.Done = true;
@@ -193,7 +193,7 @@ public static class MoveExecutor
             catch (Exception e)
             {
                 failed++;
-                messages.Add($"{d.FileName}: {e.Message}");
+                messages.Add($"{d.RelativePath}: {e.Message}");
             }
         }
         return new MoveReport(moved, renamed, skipped, failed, messages);
