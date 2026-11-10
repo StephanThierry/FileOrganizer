@@ -21,13 +21,12 @@
       <Border IsVisible="{Binding HasSettingsError}" Background="{DynamicResource GreaseWash}" CornerRadius="8" Padding="14,10">
         <TextBlock Text="{Binding SettingsError}" TextWrapping="Wrap"/>
       </Border>
-      <!-- Which rule wins for a text? -->
+      <!-- Filter the category list: the name first, then the strings of the rules -->
       <Border Classes="panel" Padding="16,12">
         <StackPanel Spacing="6">
-          <TextBlock Text="Try some text" FontWeight="SemiBold"/>
-          <TextBox Text="{Binding TryText}" PlaceholderText="A file name or some text from a video, to see which category it would go to (with your unsaved changes)"/>
-          <TextBlock Text="{Binding TryResult}" TextWrapping="Wrap" IsVisible="{Binding TryResult, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                     Classes.ok="{Binding TryMatches}"/>
+          <TextBlock Text="Filter category" FontWeight="SemiBold"/>
+          <TextBox Text="{Binding FilterText}" PlaceholderText="Part of a category name (those come first), or of a text in its rules. A file name or a line of text also finds the categories whose rules match it."/>
+          <TextBlock Text="{Binding FilterSummary}" Classes="muted small" TextWrapping="Wrap" IsVisible="{Binding FilterSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
         </StackPanel>
       </Border>
     </StackPanel>
@@ -51,12 +50,13 @@
             <Button Classes="small" Content="Down" Command="{Binding MoveDownCommand}" ToolTip.Tip="Lower priority: checked later (the list stays alphabetical; the priority number changes)"/>
             <Button Classes="small dangerOutline" Content="Delete" Command="{Binding DeleteCategoryCommand}"/>
           </StackPanel>
-          <ListBox Classes="cats" ItemsSource="{Binding SortedCategories}" SelectedItem="{Binding Selected}" Background="Transparent">
+          <ListBox x:Name="CategoryList" Classes="cats" ItemsSource="{Binding SortedCategories}" SelectedItem="{Binding ListSelected}" Background="Transparent">
             <ListBox.ItemTemplate>
               <DataTemplate x:DataType="vm:CategoryItem">
                 <StackPanel Spacing="1">
-                  <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                  <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
                   <TextBlock Text="{Binding InfoText}" Classes="muted small"/>
+                  <TextBlock Text="{Binding MatchText}" Classes="small" Foreground="{DynamicResource Accent}" TextTrimming="CharacterEllipsis" IsVisible="{Binding HasMatchText}"/>
                 </StackPanel>
               </DataTemplate>
             </ListBox.ItemTemplate>
@@ -71,7 +71,7 @@
           <StackPanel Spacing="16">
             <StackPanel Spacing="4">
               <TextBlock Text="Folder name" FontWeight="SemiBold"/>
-              <TextBox Text="{Binding Name}"/>
+              <TextBox x:Name="NameBox" Text="{Binding Name}" PlaceholderText="Name of the category (this becomes the folder name)"/>
               <CheckBox IsChecked="{Binding IgnoreName}" Content="Do not use the name itself as a rule" Margin="0,4,0,0"/>
               <TextBlock Classes="muted small" TextWrapping="Wrap"
                          Text="Normally a file also matches when the category's name is found in it. Switch this on for a general word (like Barry) that must only match through its rules."/>

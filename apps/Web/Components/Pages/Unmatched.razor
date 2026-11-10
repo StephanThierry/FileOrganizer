@@ -41,14 +41,14 @@
                         else { <Thumb Decision="d" Index="IndexOf(d)" /> }
                     </div>
                     <div class="info">
-                        <div class="name">@d.FileName</div>
+                        <button class="namelink" title="Make a rule from the file name" @onclick="() => OpenRule(System.IO.Path.GetFileNameWithoutExtension(d.FileName), null, d)">@d.FileName</button>
                         <div class="chips">
-                            @if (d.Title.Length > 0) { <span class="chip-wrap">@Tick(d, d.Title)<button class="chip btn" @onclick="() => OpenRule(d.Title, null)"><small>Title tag</small>@d.Title</button></span> }
-                            @if (d.Comment.Length > 0) { <span class="chip-wrap">@Tick(d, d.Comment)<button class="chip btn" @onclick="() => OpenRule(d.Comment, null)"><small>Comment tag</small>@d.Comment</button></span> }
+                            @if (d.Title.Length > 0) { <span class="chip-wrap">@Tick(d, d.Title)<button class="chip btn" @onclick="() => OpenRule(d.Title, null, d)"><small>Title tag</small>@d.Title</button></span> }
+                            @if (d.Comment.Length > 0) { <span class="chip-wrap">@Tick(d, d.Comment)<button class="chip btn" @onclick="() => OpenRule(d.Comment, null, d)"><small>Comment tag</small>@d.Comment</button></span> }
                             @* One tag per text on screen, however many different ways the frames read it: all the readings are kept, to choose a rule from *@
                             @foreach (var f in OcrText.Findings(d.OcrLines).Where(f => f.Best.Any(char.IsLetter)))
                             {
-                                <span class="chip-wrap">@Tick(d, f.Best)<button class="chip btn" title="@VariantsTip(f)" @onclick="() => OpenRule(f.Best, f.Variants)">@(f.Best)@if (f.Variants.Count > 1) { <small class="muted"> @f.Variants.Count variants</small> }</button></span>
+                                <span class="chip-wrap">@Tick(d, f.Best)<button class="chip btn" title="@VariantsTip(f)" @onclick="() => OpenRule(f.Best, f.Variants, d)">@(f.Best)@if (f.Variants.Count > 1) { <small class="muted"> @f.Variants.Count variants</small> }</button></span>
                             }
                             @if (d.OcrCorrupt) { <span class="muted">The video can't be read.</span> }
                         </div>
@@ -134,7 +134,7 @@
         </div>
         @if (GuideVisible)
         {
-            <RegexGuidePanel Value="@GuideValue" Tips="guideTips" OnClose="() => guideDismissed = true" />
+            <RegexGuidePanel Value="@GuideValue" Tips="guideTips" InitialText="@ruleFileName" OnClose="() => guideDismissed = true" />
         }
         </div>
     </div>
@@ -256,8 +256,12 @@
         Preview();
     }
 
+    // The file the rule is made from: the regex guide's test box starts with its name
+    private string ruleFileName = "";
+
     private void OpenAllRule(FileDecision d)
     {
+        ruleFileName = d.FileName;
         guideTerm = null; guideDismissed = false;
         SetVariants(Ticked(d).SelectMany(t => VariantsFor(d, t)));
         ruleTerms = Ticked(d).Select(t => new RuleTerm("Contains", t)).ToList();
@@ -300,8 +304,9 @@
         if (!GuideVisible) ShowGuide();
     }
 
-    private void OpenRule(string text, IReadOnlyList<OcrVariant>? variants)
+    private void OpenRule(string text, IReadOnlyList<OcrVariant>? variants, FileDecision from)
     {
+        ruleFileName = from.FileName;
         guideTerm = null; guideDismissed = false;
         SetVariants(variants ?? new[] { new OcrVariant(text, 1) });
         ruleTerms = new();

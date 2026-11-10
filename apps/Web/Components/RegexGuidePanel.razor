@@ -36,5 +36,10 @@
 
     [Parameter] public EventCallback OnClose { get; set; }
 
+    /// <summary>What the test box starts with (the file name of the video the rule is made from).</summary>
+    [Parameter] public string InitialText { get; set; } = "";
+
     private string text = "";
+
+    protected override void OnInitialized() => text = InitialText;
 }

@@ -2,6 +2,8 @@ using System.Diagnostics;
 using Avalonia;
 using Avalonia.Headless;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
+using Avalonia.Controls;
 using FileOrganizer;
 using FileOrganizer.Desktop;
 using FileOrganizer.Desktop.ViewModels;
@@ -90,7 +92,7 @@ void WaitFor(Func<bool> condition, int seconds, string what)
 }
 
 // --- The screens ---
-vm.SelectedTab = MainViewModel.RulesTab; vm.Rules.TryText = "Season S02E05 of the show"; Pump(500); Shot("o_rules");
+vm.SelectedTab = MainViewModel.RulesTab; vm.Rules.FilterText = "Season S02E05 of the show"; Pump(500); Shot("o_rules");
 // The regex guide: opens beside a Regex rule, with a test text
 vm.Rules.Selected = vm.Rules.Categories.First(c => c.Name == "Series");
 vm.Rules.Selected.Rules[0].Activate(); vm.Rules.Guide.Text = "Show S01E07 and s12e10 but not S1E2"; Pump(500); Shot("o_rules_guide");
@@ -101,8 +103,45 @@ allRule.Type = RuleItem.AllLabel;
 allRule.Terms[0].Type = "Regex"; allRule.Terms[0].Value = "R.?C";
 allRule.Terms[1].Value = "hub";
 allRule.AddTermCommand.Execute(null); allRule.Terms[2].Value = "community";
-allRule.Terms[0].Activate(); vm.Rules.Guide.Text = "REC and R3C and RC but not RXXC"; vm.Rules.TryText = "REC hub community"; Pump(500); Shot("o_rules_allof");
+allRule.Terms[0].Activate(); vm.Rules.Guide.Text = "REC and R3C and RC but not RXXC"; vm.Rules.FilterText = "REC hub community"; Pump(500); Shot("o_rules_allof");
 vm.Rules.Guide.Close();
+
+// Rules > Add: the cursor goes to the name box, so typing names the category (it used to stay "New category" and be saved so)
+vm.Rules.RevertCommand.Execute(null); Pump(300);
+vm.Rules.AddCategoryCommand.Execute(null); Pump(700);
+var newCat = vm.Rules.Selected!;
+Console.WriteLine($"[check] after Add the new category has no name yet: {newCat.Name.Length == 0}, list shows '{newCat.DisplayName}'");
+foreach (var ch in "Zebra") { window.KeyTextInput(ch.ToString()); Pump(200); }
+Console.WriteLine($"[check] typed Zebra right after Add: name = '{newCat.Name}' ({(newCat.Name == "Zebra" ? "OK" : "FAILED")}), still selected = {ReferenceEquals(vm.Rules.Selected, newCat)}");
+vm.Rules.RevertCommand.Execute(null); Pump(300);
+
+// Type-ahead in the category list: letters typed with the list selected go to the first category that starts with them
+var catList = window.GetVisualDescendants().OfType<ListBox>().First(l => l.Name == "CategoryList");
+vm.Rules.Selected = vm.Rules.SortedCategories.First(); Pump(300);
+// Like a click on an item: the list item has the keyboard focus
+var firstItemBox = catList.ContainerFromItem(vm.Rules.Selected!);
+Console.WriteLine($"[check] before typing, the focus is in: {(firstItemBox?.Focus() == true ? "the selected list item" : "NOT the list")}");
+Pump(200);
+window.KeyTextInput("t"); Pump(250);
+Console.WriteLine($"[check] list focused, typed t: selected = '{vm.Rules.Selected?.Name}' ({(vm.Rules.Selected?.Name == "Tutorials" ? "OK" : "FAILED")}), the list shows it selected = {ReferenceEquals(catList.SelectedItem, vm.Rules.Selected)}");
+window.KeyTextInput("s"); Pump(250);
+Console.WriteLine($"[check] then typed s (within a second: \"ts\" has no match, so a new search): selected = '{vm.Rules.Selected?.Name}' ({(vm.Rules.Selected?.Name == "Series" ? "OK" : "FAILED")})");
+Pump(1200);
+window.KeyTextInput("b"); Pump(250);
+Console.WriteLine($"[check] typed b a second later: selected = '{vm.Rules.Selected?.Name}' ({(vm.Rules.Selected?.Name == "Barry" ? "OK" : "FAILED")})");
+
+// Filter category: the name first, then the strings of the rules
+vm.Rules.FilterText = "tut"; Pump(200);
+Console.WriteLine($"[check] filter 'tut': {string.Join(", ", vm.Rules.SortedCategories.Select(c => c.Name + (c.HasMatchText ? " [" + c.MatchText + "]" : "")))} | {vm.Rules.FilterSummary}");
+vm.Rules.FilterText = "lesson"; Pump(200);
+Console.WriteLine($"[check] filter 'lesson': {string.Join(", ", vm.Rules.SortedCategories.Select(c => c.Name + (c.HasMatchText ? " [" + c.MatchText + "]" : "")))} | {vm.Rules.FilterSummary}");
+vm.Rules.FilterText = "Season S02E05 of the show"; Pump(200);
+Console.WriteLine($"[check] filter with a file name: {string.Join(", ", vm.Rules.SortedCategories.Select(c => c.Name + (c.HasMatchText ? " [" + c.MatchText + "]" : "")))}");
+Shot("o_rules_filter");
+// The edited category stays selected when the filter hides it
+var keepSel = vm.Rules.Selected; vm.Rules.FilterText = "zzzqqq"; Pump(200);
+Console.WriteLine($"[check] filter with no hit: list has {vm.Rules.SortedCategories.Count} categories, editor still shows '{vm.Rules.Selected?.Name}' ({(ReferenceEquals(vm.Rules.Selected, keepSel) && vm.Rules.HasSelected ? "OK" : "FAILED")})");
+vm.Rules.FilterText = ""; Pump(200);
 vm.SelectedTab = MainViewModel.SettingsTab; Pump(300); Shot("o_settings");
 vm.SelectedTab = MainViewModel.ScanTab; Pump(300); Shot("o_scan_idle");
 
@@ -112,6 +151,10 @@ vm.SelectedTab = MainViewModel.ScanTab; Pump(300); Shot("o_scan_idle");
     typeof(AppController).GetProperty("Result")!.SetValue(app, fake);
     vm.SelectedTab = MainViewModel.UnmatchedTab; vm.Unmatched.Reload(); Pump(600);
     var row = vm.Unmatched.Rows[0];
+    // Clicking the file name makes a rule from it, like any other text
+    row.NameCommand.Execute(null); Pump(300);
+    Console.WriteLine($"[check] clicked the file name: dialog open = {vm.Unmatched.RuleVisible}, text = '{vm.Unmatched.RuleText}' ({(vm.Unmatched.RuleText == "summer clip" ? "OK" : "FAILED")}); the regex guide's test box starts with '{vm.Unmatched.Guide.Text}' ({(vm.Unmatched.Guide.Text == "summer clip.mp4" ? "OK" : "FAILED")})");
+    vm.Unmatched.CancelRuleCommand.Execute(null); Pump(200);
     row.Lines[0].IsSelected = true; row.Lines[1].IsSelected = true; Pump(300); Shot("o_unmatched_ticked");
     row.MakeAllRuleCommand.Execute(null);
     vm.Unmatched.RuleTerms[0].Type = "Regex"; vm.Unmatched.RuleTerms[0].Value = "R.?C"; vm.Unmatched.Guide.Text = "REC and R3C and RC but not RXXC"; Pump(500); Shot("o_dialog_allof_guide");

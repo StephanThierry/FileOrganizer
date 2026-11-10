@@ -384,3 +384,6 @@ unmatched_files.txt
 .token
 state.json
 _thumbs/
+
+# Output of dotnet publish (see the readme)
+publish/

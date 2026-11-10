@@ -231,10 +231,10 @@ public partial class UnmatchedViewModel : ViewModelBase
 
     // ---------- Make a rule ----------
 
-    private void OpenRule(string text, IReadOnlyList<OcrVariant> variants)
+    private void OpenRule(string text, IReadOnlyList<OcrVariant> variants, string fileName)
     {
         Guide.Close();
-        Guide.Text = "";
+        Guide.Text = fileName;   // the regex guide's test box starts with the file name: the pattern can be tried on it at once
         RuleTerms.Clear();
         SetVariants(variants);
         RuleText = text;
@@ -246,10 +246,10 @@ public partial class UnmatchedViewModel : ViewModelBase
     }
 
     // Several texts of one file were ticked: one rule that needs all of them (each can be edited, or made a pattern, here)
-    private void OpenAllRule(IEnumerable<TextLine> lines)
+    private void OpenAllRule(IEnumerable<TextLine> lines, string fileName)
     {
         Guide.Close();
-        Guide.Text = "";
+        Guide.Text = fileName;
         RuleTerms.Clear();
         var chosen = lines.ToList();
         SetVariants(chosen.SelectMany(l => l.Variants));
@@ -315,25 +315,32 @@ public sealed partial class UnmatchedRow : FileRow
     public bool CanMakeAllRule => SelectedCount >= 2;
     public string MakeAllRuleText => $"Make one rule from the {SelectedCount} ticked texts (all must be found)";
 
-    private readonly Action<IEnumerable<TextLine>> makeAllRule;
+    private readonly Action<IEnumerable<TextLine>, string> makeAllRule;
+    private readonly string fileNameForGuide;
+
+    /// <summary>The file name (without its extension) as a text to make a rule from, like the tags and the text found in the video.</summary>
+    public IRelayCommand NameCommand { get; }
 
     [RelayCommand]
-    private void MakeAllRule() => makeAllRule(Lines.Where(l => l.IsSelected).ToList());
+    private void MakeAllRule() => makeAllRule(Lines.Where(l => l.IsSelected).ToList(), fileNameForGuide);
 
     private void SelectionChanged()
     {
         OnPropertyChanged(nameof(SelectedCount)); OnPropertyChanged(nameof(CanMakeAllRule)); OnPropertyChanged(nameof(MakeAllRuleText));
     }
 
-    public UnmatchedRow(FileDecision d, AppController app, ObservableCollection<string> choices, Action<string?> play, Action assigned, Action<string, IReadOnlyList<OcrVariant>> makeRule, Action<IEnumerable<TextLine>> makeAllRule)
+    public UnmatchedRow(FileDecision d, AppController app, ObservableCollection<string> choices, Action<string?> play, Action assigned, Action<string, IReadOnlyList<OcrVariant>, string> makeRule, Action<IEnumerable<TextLine>, string> makeAllRule)
         : base(d, app, choices, play, assigned)
     {
         this.makeAllRule = makeAllRule;
+        fileNameForGuide = d.FileName;
+        string nameText = System.IO.Path.GetFileNameWithoutExtension(d.FileName);
+        NameCommand = new RelayCommand(() => makeRule(nameText, new[] { new OcrVariant(nameText, 1) }, d.FileName));
         Lines = new List<TextLine>();
         TextLine Make(string label, string text, IReadOnlyList<OcrVariant>? variants = null)
         {
             variants ??= new[] { new OcrVariant(text, 1) };
-            return new(label, text, new RelayCommand(() => makeRule(text, variants)), SelectionChanged, variants);
+            return new(label, text, new RelayCommand(() => makeRule(text, variants, d.FileName)), SelectionChanged, variants);
         }
         if (d.Title.Length > 0) Lines.Add(Make("Title tag", d.Title));
         if (d.Comment.Length > 0) Lines.Add(Make("Comment tag", d.Comment));
