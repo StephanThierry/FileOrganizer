@@ -29,6 +29,11 @@
                 <div class="folder-line">
                     <input type="text" @bind="folder" @bind:event="oninput" placeholder="The folder with the files, on the computer running File Organizer" disabled="@running" aria-label="Folder to organize" />
                     <button @onclick="() => picking = true" disabled="@running">Browse...</button>
+                    @* A second Start scan, right where the folder is chosen (the same button as at the top) *@
+                    @if (!(App.Engine.IsRunning && p.Phase is OrganizePhase.Listing or OrganizePhase.Scanning))
+                    {
+                        <button class="primary" @onclick="Start">@(p.Phase == OrganizePhase.Idle ? "Start scan" : "Run new scan")</button>
+                    }
                 </div>
                 @if (App.RecentFolders.Count > 0 && !running)
                 {

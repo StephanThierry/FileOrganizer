@@ -40,7 +40,30 @@ public partial class UnmatchedView : UserControl
 
 public partial class RulesView : UserControl
 {
-    public RulesView() { InitializeComponent(); }
+    public RulesView()
+    {
+        InitializeComponent();
+        // Type-ahead in the category list: a letter or a number typed with the list selected goes to the first category that starts with it
+        this.FindControl<ListBox>("CategoryList")?.AddHandler(Avalonia.Input.InputElement.TextInputEvent, (_, e) =>
+        {
+            if (DataContext is RulesViewModel vm && !string.IsNullOrEmpty(e.Text) && !char.IsControl(e.Text[0]))
+            {
+                vm.TypeAhead(e.Text);
+                e.Handled = true;
+            }
+        }, Avalonia.Interactivity.RoutingStrategies.Tunnel);
+        DataContextChanged += (_, _) =>
+        {
+            // After Add the cursor goes to the name box (otherwise what is typed is taken by the list as a search for a category)
+            if (DataContext is RulesViewModel vm)
+                vm.NameFocusRequested += () => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                {
+                    var box = this.FindControl<TextBox>("NameBox");
+                    box?.Focus();
+                    box?.SelectAll();
+                }, Avalonia.Threading.DispatcherPriority.Background);
+        };
+    }
 
     // Clicking in the text of a Regex rule shows the regex guide beside it
     private void RuleGotFocus(object? sender, Avalonia.Input.FocusChangedEventArgs e)

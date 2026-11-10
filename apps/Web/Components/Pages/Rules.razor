@@ -2,6 +2,7 @@
 @implements IDisposable
 @inject AppController App
 @inject NavigationManager Nav
+@inject IJSRuntime JS
 
 <PageTitle>Rules</PageTitle>
 
@@ -28,12 +29,22 @@
 
     <div class="cat-layout @(GuideOpen ? "has-guide" : "")">
         <div>
-            <div class="cat-list">
-                @foreach (var c in cats.OrderBy(c => c.Name, StringComparer.CurrentCultureIgnoreCase))
+            @* Filter category: the name first, then the strings of the rules (a file name or a line of text finds the categories whose rules match it) *@
+            @{ var hits = CategoryFilter.Apply(cats, filterText); }
+            <input type="search" class="cat-filter" placeholder="Filter category: part of a name, or of a rule's text" @bind="filterText" @bind:event="oninput" aria-label="Filter category" />
+            @if (filterText.Trim().Length > 0)
+            {
+                <p class="muted" aria-live="polite" style="margin:4px 0 8px">@(hits.Count == 0 ? "No category has this in its name or in a rule, and no rule matches it." : $"{hits.Count:N0} of {cats.Count:N0} categories: {hits.Count(h => h.Reason == null):N0} by name" + (hits.Any(h => h.Reason != null) ? $", {hits.Count(h => h.Reason != null):N0} by a rule" : "") + ".")</p>
+            }
+            @* A letter or number typed with the list in use selects the first category that starts with it *@
+            <div class="cat-list" tabindex="0" @onkeydown="ListKey" aria-label="Categories">
+                @foreach (var h in hits)
                 {
+                    var c = h.Category;
                     <button class="cat-item @(c == selected ? "selected" : "")" @onclick="() => selected = c">
                         <span>@(c.Name.Length == 0 ? "(no name)" : c.Name)</span>
                         <span class="muted">Priority @(cats.IndexOf(c) + 1)@(FilesOf(c).Length > 0 ? " · " + FilesOf(c) : "")</span>
+                        @if (h.Reason != null) { <span class="cat-reason">@h.Reason</span> }
                     </button>
                 }
                 @if (cats.Count == 0) { <p class="muted" style="padding:12px">No categories yet.</p> }
@@ -52,7 +63,7 @@
                 <section class="panel">
                     <h2>Category</h2>
                     <div class="field" style="margin-top:10px">
-                        <input type="text" @bind="selected.Name" @bind:event="oninput" @bind:after="Edited" aria-label="Category (folder) name" />
+                        <input type="text" @ref="nameInput" placeholder="Name of the category (this becomes the folder name)" @bind="selected.Name" @bind:event="oninput" @bind:after="Edited" aria-label="Category (folder) name" />
                     </div>
                     <label class="inline"><input type="checkbox" checked="@selected.IgnoreCategoryInContent" @onchange="e => { selected.IgnoreCategoryInContent = (bool)e.Value!; Edited(); }" /> Don't use the name itself as a rule, only the rules below</label>
 
@@ -92,17 +103,6 @@
                 </section>
             }
 
-            <section class="panel">
-                <h2>Try a text</h2>
-                <div class="field" style="margin-top:10px">
-                    <input type="text" placeholder="A file name or text from a video" @bind="tryText" @bind:event="oninput" aria-label="Text to try" />
-                </div>
-                @if (tryText.Trim().Length > 0)
-                {
-                    <p aria-live="polite">@TryResult()</p>
-                }
-            </section>
-
             @if (App.Result != null && !edited)
             {
                 <p><button @onclick='() => Nav.NavigateTo("scan")'>Scan again</button></p>
@@ -126,7 +126,7 @@
     private Category? selected;
     private bool edited, savedOnce;
     private List<string> problems = new();
-    private string tryText = "";
+    private string filterText = "";
     private string? toast;
     private CancellationTokenSource? toastTimer;
 
@@ -195,21 +195,48 @@
         return s;
     }
 
-    private string TryResult()
+    // After Add the cursor goes to the name box: the name is typed at once (a category can't be saved before it has one)
+    private ElementReference nameInput;
+    private bool focusName;
+
+    private bool scrollSelected;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        var hits = RuleMatcher.Explain(tryText, Working());
-        if (hits.Count == 0) return "No category matches this text.";
-        return $"Goes to {hits[0].Category} ({hits[0].Trigger})."
-            + (hits.Count > 1 ? " Also matched, but later in the list: " + string.Join(", ", hits.Skip(1).Select(h => h.Category).Distinct()) + "." : "");
+        if (scrollSelected)
+        {
+            scrollSelected = false;
+            try { await JS.InvokeVoidAsync("eval", "document.querySelector('.cat-item.selected')?.scrollIntoView({ block: 'nearest' })"); } catch (Exception) { }
+        }
+        if (!focusName) return;
+        focusName = false;
+        await nameInput.FocusAsync();
+    }
+
+    // Type-ahead in the list: letters and digits typed in a row (within a second) select the first category whose name starts with them
+    private string typed = "";
+    private DateTime typedAt = DateTime.MinValue;
+
+    private void ListKey(KeyboardEventArgs e)
+    {
+        if (e.Key.Length != 1 || e.CtrlKey || e.AltKey || e.MetaKey) return;
+        if (DateTime.UtcNow - typedAt > TimeSpan.FromSeconds(1)) typed = "";
+        typedAt = DateTime.UtcNow;
+        var shown = CategoryFilter.Apply(cats, filterText).Select(h => h.Category).ToList();
+        Category? Find(string prefix) => shown.FirstOrDefault(c => c.Name.StartsWith(prefix, StringComparison.CurrentCultureIgnoreCase));
+        typed += e.Key;
+        var hit = Find(typed);
+        if (hit == null && typed.Length > 1) { typed = e.Key; hit = Find(typed); }   // nothing starts with all of it: a new search from this key
+        if (hit != null) { selected = hit; scrollSelected = true; }
     }
 
     private void AddCategory()
     {
-        string name = "New category";
-        for (int i = 2; cats.Any(c => c.Name.Equals(name, StringComparison.OrdinalIgnoreCase)); i++) name = $"New category {i}";
-        var c = new Category { Name = name, IgnoreCategoryInContent = true, Rules = { new Rule() } };
+        filterText = "";   // the new category must be in the list
+        var c = new Category { Name = "", IgnoreCategoryInContent = true, Rules = { new Rule() } };
         cats.Add(c);
         selected = c;
+        focusName = true;
         Edited();
     }
 

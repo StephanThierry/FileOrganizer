@@ -142,6 +142,16 @@ dotnet run --project apps/Web
 ```
 Opens http://127.0.0.1:5078 (this computer only). To use it from another computer, listen on the network: `--urls http://0.0.0.0:5078`. A token is then required: it is printed at start (`Open: ...?token=...`) and kept in `.token` in the data folder. Options: `--data <folder>`, `--urls`, `--token <secret|off>`, `--no-browser`.
 
+### A self-contained desktop app (one file, no .NET needed)
+```cmd
+dotnet publish apps/Desktop -r win-x64 -c Release -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=none --self-contained -o publish
+```
+This makes `publish\FileOrganizer.Desktop.exe` (about 240 MB: the .NET runtime, OpenCV and the OCR engine are inside). Copy that one file to any Windows computer and start it - nothing has to be installed. Leave out `-p:IncludeNativeLibrariesForSelfExtract=true` for a smaller exe (about 105 MB), but then the DLLs published next to it (OpenCV, ONNX Runtime, Skia) must stay in the same folder. The first start is a little slower, because the exe unpacks its native libraries to a temporary folder.
+
+* **Linux:** use `-r linux-x64` (the output file has no `.exe`). **Web app / command line:** use `apps/Web` or `apps/Cli` instead of `apps/Desktop`.
+* **Write `-p:`, not `/p:`:** it works in every shell (Git Bash turns `/p:...` into a path).
+* **First run:** the exe makes its own data folder (see below; `--data <folder>` to choose one). The OCR models (about 13 MB) are downloaded into its `models` folder once, so the first scan needs internet - or put a `models` folder with the two `.onnx` files next to the exe.
+
 ### Data folder
 `settings.json` (your rules), the pictures of videos (`_thumbs`), the OCR models and the last folder used live in the data folder: `--data <folder>`, or the environment variable `FILEORG_DATA`, or the current folder if it holds a `settings.json`, else `%APPDATA%\FileOrganizer` (`~/.config/FileOrganizer` on Linux). The OCR cache `_FileProcessor_VideoOcrResult.json` stays in the scanned folder, as before.
 

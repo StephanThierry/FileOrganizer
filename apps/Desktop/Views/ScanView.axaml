@@ -39,9 +39,11 @@
           <Border Classes="panel" VerticalAlignment="Top">
             <StackPanel Spacing="10">
               <TextBlock Classes="h2" Text="Folder to organize"/>
-              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+              <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
                 <TextBox Text="{Binding Folder}" PlaceholderText="The folder with the files, e.g. D:\Downloads" IsEnabled="{Binding !IsRunning}"/>
                 <Button Grid.Column="1" Content="Browse..." Command="{Binding BrowseCommand}" IsEnabled="{Binding !IsRunning}"/>
+                <!-- A second Start scan, right where the folder is chosen -->
+                <Button Grid.Column="2" Classes="primary" Content="Start scan" Command="{Binding StartCommand}" IsVisible="{Binding !IsRunning}"/>
               </Grid>
               <ItemsControl ItemsSource="{Binding Recent}" IsVisible="{Binding !IsRunning}">
                 <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel>

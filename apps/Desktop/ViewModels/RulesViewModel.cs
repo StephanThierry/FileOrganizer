@@ -130,6 +130,11 @@ public partial class CategoryItem : ObservableObject
     /// <summary>Where the category stands in the order the rules are checked (1 is checked first).</summary>
     [ObservableProperty] private int priority;
 
+    /// <summary>Why the category is in the filtered list when it is not by its name: the rule string that fits (empty otherwise).</summary>
+    [ObservableProperty] private string matchText = "";
+    public bool HasMatchText => MatchText.Length > 0;
+    partial void OnMatchTextChanged(string value) => OnPropertyChanged(nameof(HasMatchText));
+
     /// <summary>The line under the name in the list.</summary>
     public string InfoText => $"Priority {Priority}" + (FilesText.Length > 0 ? " · " + FilesText : "");
     partial void OnPriorityChanged(int value) => OnPropertyChanged(nameof(InfoText));
@@ -145,7 +150,11 @@ public partial class CategoryItem : ObservableObject
     }
 
     public bool NameIsRule => !IgnoreName;
-    partial void OnNameChanged(string value) => edited();
+
+    /// <summary>The name in the list: a category that has no name yet says so.</summary>
+    public string DisplayName => string.IsNullOrWhiteSpace(Name) ? "(not named yet)" : Name;
+
+    partial void OnNameChanged(string value) { OnPropertyChanged(nameof(DisplayName)); edited(); }
     partial void OnIgnoreNameChanged(bool value) { OnPropertyChanged(nameof(NameIsRule)); edited(); }
 
     [RelayCommand]
@@ -169,17 +178,20 @@ public partial class RulesViewModel : ViewModelBase
 
     /// <summary>The categories in priority order: the first one that matches wins. This is the order that is saved.</summary>
     public ObservableCollection<CategoryItem> Categories { get; } = new();
-    /// <summary>The same categories for the list on screen: alphabetical, each showing its priority.</summary>
+    /// <summary>The list on screen: the categories that fit the filter (all of them, alphabetical, without text), each showing its priority.</summary>
     public ObservableCollection<CategoryItem> SortedCategories { get; } = new();
     public string[] RuleTypes { get; } = { "Contains", "Regex" };
 
+    /// <summary>The category being edited. It stays when the filter hides it from the list (so a name can be typed on).</summary>
     [ObservableProperty] private CategoryItem? selected;
+    /// <summary>What the list shows as selected (the same category, when the list has it).</summary>
+    [ObservableProperty] private CategoryItem? listSelected;
     [ObservableProperty] private bool isEdited;
     [ObservableProperty] private bool hasCategories;
     [ObservableProperty] private string problems = "";
-    [ObservableProperty] private string tryText = "";
-    [ObservableProperty] private string tryResult = "";
-    [ObservableProperty] private bool tryMatches;
+    /// <summary>The "Filter category" box: categories with this in their name first, then the ones with a rule that fits.</summary>
+    [ObservableProperty] private string filterText = "";
+    [ObservableProperty] private string filterSummary = "";
     [ObservableProperty] private string? settingsError;
 
     // The regex guide, beside the rule being edited
@@ -201,9 +213,34 @@ public partial class RulesViewModel : ViewModelBase
     }
 
     partial void OnProblemsChanged(string value) => OnPropertyChanged(nameof(HasProblems));
-    partial void OnSelectedChanged(CategoryItem? value) { OnPropertyChanged(nameof(HasSelected)); if (Guide.Target != null && value?.Owns(Guide.Target) != true) Guide.Close(); }
+    partial void OnSelectedChanged(CategoryItem? value)
+    {
+        OnPropertyChanged(nameof(HasSelected));
+        ListSelected = value != null && SortedCategories.Contains(value) ? value : null;
+        if (Guide.Target != null && value?.Owns(Guide.Target) != true) Guide.Close();
+    }
+
+    // A click in the list selects that category; the list losing its selection (the filter hides it) does not deselect it
+    partial void OnListSelectedChanged(CategoryItem? value) { if (value != null && !ReferenceEquals(value, Selected)) Selected = value; }
+
+    partial void OnFilterTextChanged(string value) { if (!loading) Refresh(); }
     partial void OnSettingsErrorChanged(string? value) => OnPropertyChanged(nameof(HasSettingsError));
-    partial void OnTryTextChanged(string value) => Try();
+
+    // Type-ahead in the list: letters and digits typed in a row (within a second) select the first category whose name starts with them
+    private string typed = "";
+    private DateTime typedAt = DateTime.MinValue;
+
+    public void TypeAhead(string text)
+    {
+        if (string.IsNullOrEmpty(text)) return;
+        if (DateTime.UtcNow - typedAt > TimeSpan.FromSeconds(1)) typed = "";
+        typedAt = DateTime.UtcNow;
+        CategoryItem? Find(string prefix) => SortedCategories.FirstOrDefault(c => c.Name.StartsWith(prefix, StringComparison.CurrentCultureIgnoreCase));
+        typed += text;
+        var hit = Find(typed);
+        if (hit == null && typed.Length > text.Length) { typed = text; hit = Find(typed); }   // nothing starts with all of it: a new search from this key
+        if (hit != null) Selected = hit;
+    }
     /// <summary>Shows the regex guide for a Regex rule or term (it counts the patterns of the rules as they are being edited).</summary>
     private void ShowGuide(IGuideTarget rule)
     {
@@ -218,29 +255,46 @@ public partial class RulesViewModel : ViewModelBase
         Categories.Clear();
         SortedCategories.Clear();
         foreach (var c in app.Settings.Categories) Categories.Add(new CategoryItem(c, RemoveRule, Edited, ShowGuide));
-        foreach (var c in Categories.OrderBy(c => c.Name, NameOrder)) SortedCategories.Add(c);
         UpdatePriorities();
+        Refresh();
         Selected = Categories.FirstOrDefault(c => c.Name == keep) ?? SortedCategories.FirstOrDefault();
         loading = false;
         IsEdited = false;
         Problems = "";
         HasCategories = Categories.Count > 0;
         UpdateCounts();
-        Try();
     }
 
-    private static readonly StringComparer NameOrder = StringComparer.CurrentCultureIgnoreCase;
-
-    // The list on screen follows the names (moving items, so the selection stays)
-    private void Resort()
+    // The list on screen: the categories that fit the filter, in the order of the filter (without text: alphabetical), each with the rule
+    // string that fits. Items are removed, inserted and moved one by one (the list is not cleared), so it does not jump and the selection stays.
+    private void Refresh()
     {
-        var wanted = Categories.OrderBy(c => c.Name, NameOrder).ToList();
+        var items = Categories.ToList();
+        var plain = items.Select(c => c.ToCategory()).ToList();
+        var hits = CategoryFilter.Apply(plain, FilterText);
+        var wanted = new List<CategoryItem>();
+        foreach (var h in hits)
+        {
+            var item = items[plain.IndexOf(h.Category)];
+            item.MatchText = h.Reason ?? "";
+            wanted.Add(item);
+        }
+        foreach (var c in items.Except(wanted)) c.MatchText = "";
+
+        for (int i = SortedCategories.Count - 1; i >= 0; i--)
+            if (!wanted.Contains(SortedCategories[i])) SortedCategories.RemoveAt(i);
         for (int i = 0; i < wanted.Count; i++)
         {
             int at = SortedCategories.IndexOf(wanted[i]);
             if (at < 0) SortedCategories.Insert(i, wanted[i]);
             else if (at != i) SortedCategories.Move(at, i);
         }
+
+        int byName = hits.Count(h => h.Reason == null);
+        FilterSummary = (FilterText ?? "").Trim().Length == 0 ? ""
+            : hits.Count == 0 ? "No category has this in its name or in a rule, and no rule matches it."
+            : $"{hits.Count:N0} of {items.Count:N0} categories: {byName:N0} by name" + (hits.Count > byName ? $", {hits.Count - byName:N0} by a rule" : "") + ".";
+        ListSelected = Selected != null && SortedCategories.Contains(Selected) ? Selected : null;
     }
 
     private void UpdatePriorities()
@@ -251,9 +305,8 @@ public partial class RulesViewModel : ViewModelBase
     private void Edited()
     {
         if (loading) return;
-        Resort();
+        Refresh();
         IsEdited = true;
-        Try();
         Guide.Update();
     }
 
@@ -274,35 +327,28 @@ public partial class RulesViewModel : ViewModelBase
         return s;
     }
 
-    // Which rule wins for a text (with the unsaved changes)?
-    private void Try()
-    {
-        if (string.IsNullOrWhiteSpace(TryText)) { TryResult = ""; TryMatches = false; return; }
-        var hits = RuleMatcher.Explain(TryText, ToSettings());
-        TryMatches = hits.Count > 0;
-        if (hits.Count == 0) { TryResult = "No category matches this text."; return; }
-        TryResult = $"Goes to {hits[0].Category} ({hits[0].Trigger})."
-            + (hits.Count > 1 ? " Also matched, but later in the list: " + string.Join(", ", hits.Skip(1).Select(h => h.Category).Distinct()) + "." : "");
-    }
-
     private void RemoveRule(RuleItem rule)
     {
         foreach (var c in Categories)
             if (c.Rules.Remove(rule)) { if (Guide.Target != null && rule.Owns(Guide.Target)) Guide.Close(); Edited(); return; }
     }
 
+    /// <summary>Asks the view to put the cursor in the name box: after Add the user types the name at once.</summary>
+    public event Action? NameFocusRequested;
+
     [RelayCommand]
     private void AddCategory()
     {
-        string name = "New category";
-        for (int i = 2; Categories.Any(c => c.Name.Equals(name, StringComparison.OrdinalIgnoreCase)); i++) name = $"New category {i}";
-        var item = new CategoryItem(new Category { Name = name, IgnoreCategoryInContent = true, Rules = { new Rule("Contains", "") } }, RemoveRule, Edited, ShowGuide);
+        // No name yet (the box says what to type): a category can't be saved before it has one, so no placeholder name is ever saved
+        FilterText = "";   // the new category must be in the list
+        var item = new CategoryItem(new Category { Name = "", IgnoreCategoryInContent = true, Rules = { new Rule("Contains", "") } }, RemoveRule, Edited, ShowGuide);
         Categories.Add(item);
-        Resort();
+        Refresh();
         UpdatePriorities();
         Selected = item;
         HasCategories = true;
         Edited();
+        NameFocusRequested?.Invoke();
     }
 
     [RelayCommand]

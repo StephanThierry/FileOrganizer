@@ -29,6 +29,9 @@ button.icon.del:hover:not(:disabled) { color: var(--grease-hover); background: v
 .chip.btn { cursor: pointer; font: inherit; font-size: .85rem; color: var(--ink); text-align: left; }
 .chip.btn:hover { border-color: var(--accent); color: var(--accent); }
 .chip.btn small { color: var(--muted); margin-right: 6px; }
+/* The file name: looks like text, makes a rule from it when clicked */
+.namelink { display: block; background: none; border: 0; padding: 0; font: inherit; font-weight: 600; color: inherit; text-align: left; cursor: pointer; overflow-wrap: anywhere; }
+.namelink:hover, .namelink:focus-visible { color: var(--accent); text-decoration: underline; }
 .result { background: var(--keep-wash); border: 1px solid var(--keep); border-radius: var(--radius-sheet); padding: 4px 16px; margin-bottom: 16px; }
 .result p { margin: 10px 0; word-break: break-all; }
 .actionbar { position: fixed; left: 0; right: 0; bottom: 0; background: var(--sheet); border-top: 1px solid var(--rule); z-index: 20; }
@@ -41,7 +44,9 @@ button.icon.del:hover:not(:disabled) { color: var(--grease-hover); background: v
 .un-row .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 .cat-layout { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 20px; align-items: start; }
 .cat-list { background: var(--sheet); border: 1px solid var(--rule); border-radius: var(--radius-sheet); overflow: hidden; }
-.cat-item { display: flex; justify-content: space-between; gap: 8px; width: 100%; border: 0; border-top: 1px solid var(--rule); border-radius: 0; background: none; text-align: left; padding: 10px 14px; }
+.cat-item { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; width: 100%; border: 0; border-top: 1px solid var(--rule); border-radius: 0; background: none; text-align: left; padding: 10px 14px; }
+.cat-filter { width: 100%; margin-bottom: 8px; }
+.cat-item .cat-reason { flex-basis: 100%; color: var(--accent); font-size: .85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cat-item:first-child { border-top: 0; }
 .cat-item.selected { background: var(--keep-wash); font-weight: 600; }
 .cat-layout.has-guide { grid-template-columns: 280px minmax(0, 1fr) 400px; }
