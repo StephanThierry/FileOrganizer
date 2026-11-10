@@ -111,6 +111,10 @@
                     <button class="primary big" disabled="@(pending.Count == 0)" @onclick="() => confirming = true">Move files now</button>
                 </div>
             </div>
+            @if (toast != null)
+            {
+                <div class="toast" role="status">@toast</div>   @* in the bar, along the bottom edge: it covers nothing *@
+            }
         </div>
     }
 </div>
@@ -166,7 +170,7 @@
 
 <DeleteFileDialog Decision="deleting" OnCancel="() => deleting = null" OnDone="Deleted" />
 
-@if (toast != null)
+@if (toast != null && !(App.Result != null && all.Count > 0))   // (with a bar, the message is shown in the bar)
 {
     <div class="toast" role="status">@toast</div>
 }
