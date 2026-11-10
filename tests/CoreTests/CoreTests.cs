@@ -521,6 +521,38 @@ public class AppControllerTests : IDisposable
     }
 
     [Fact]
+    public void DeleteConfirmation_IsOnByDefault_AndTheChoiceIsKept()
+    {
+        using (var app = Open(Make.Rules(Make.Cat("Barry", true, ("Contains", "x")))))
+        {
+            Assert.True(app.Settings.Opt.ConfirmDelete);                       // asks before deleting, unless turned off
+            int changed = 0;
+            app.SettingsChanged += () => changed++;
+            app.SetConfirmDelete(false);
+            Assert.False(app.Settings.Opt.ConfirmDelete);
+            Assert.Equal(1, changed);
+            app.SetConfirmDelete(false);                                       // the same again: nothing happens
+            Assert.Equal(1, changed);
+        }
+        using (var again = AppController.Open(Data))                           // kept in settings.json
+        {
+            Assert.False(again.Settings.Opt.ConfirmDelete);
+            Assert.Single(again.Settings.Categories);                          // and the rules are untouched
+            again.SetConfirmDelete(true);
+        }
+        using var third = AppController.Open(Data);
+        Assert.True(third.Settings.Opt.ConfirmDelete);
+    }
+
+    [Fact]
+    public void ASettingsFileFromBefore_WithoutTheOption_AsksBeforeDeleting()
+    {
+        File.WriteAllText(Path.Combine(Data, "settings.json"), "{ \"Categories\": [ { \"Name\": \"Barry\", \"Rules\": [ { \"Type\": \"Contains\", \"Value\": \"x\" } ] } ] }");
+        using var app = AppController.Open(Data);
+        Assert.True(app.Settings.Opt.ConfirmDelete);
+    }
+
+    [Fact]
     public void FirstRunHasNoRulesAndAScanNeedsFolderAndCategories()
     {
         using var app = Open();

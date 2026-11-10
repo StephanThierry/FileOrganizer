@@ -21,18 +21,6 @@
         </div>
     }
 
-    @* Process folders: what is left in the folders that were opened, after the moves and deletes *@
-    @if (App.LastLeftovers is { } leftovers)
-    {
-        <div class="result" role="status">
-            <p><strong>Left in the folders that were opened</strong></p>
-            <p>@leftovers.Headline</p>
-            <ul class="leftover-list">
-                @foreach (var line in leftovers.Lines()) { <li>@line</li> }
-            </ul>
-        </div>
-    }
-
     @if (App.Result == null)
     {
         <div class="empty">
@@ -63,6 +51,11 @@
             {
                 <label class="inline"><input type="checkbox" @bind="alsoRename" /> Also rename files from their title or comment tag</label>
             }
+            @if (App.LastLeftovers != null)
+            {
+                <button @onclick="() => { statusNote = string.Empty; showStatus = true; }" title="What is left in the folders that were opened">Status</button>
+            }
+            <label class="inline" title="On: deleting a file asks first. Off: the delete icon deletes the file at once, without asking."><input type="checkbox" checked="@App.Settings.Opt.ConfirmDelete" @onchange="e => App.SetConfirmDelete((bool)e.Value!)" /> Delete confirmation</label>
         </div>
 
         var visible = Visible().ToList();
@@ -80,7 +73,7 @@
                     </div>
                     <div class="fo-actions">
                         <button class="icon" @onclick="() => Play(d)" title="Open it" aria-label="Open @d.FileName">@PlayIcon</button>
-                        <button class="icon del" @onclick="() => deleting = d" title="Delete the file (asks first)" aria-label="Delete @d.FileName"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill="currentColor" /></svg></button>
+                        <button class="icon del" @onclick="() => AskDelete(d)" title="@(App.Settings.Opt.ConfirmDelete ? "Delete the file (asks first)" : "Delete the file now (Delete confirmation is off)")" aria-label="Delete @d.FileName"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill="currentColor" /></svg></button>
                     </div>
                     <div class="info">
                         <div class="name">@d.FileName</div>
@@ -136,6 +129,39 @@
     </div>
 }
 
+@* Status: what is left in the folders that were opened (Process folders), with the option to delete the empty ones *@
+@if (showStatus && App.LastLeftovers is { } status)
+{
+    <div class="dialog-backdrop" @onclick="() => showStatus = false">
+        <div class="dialog wide" role="dialog" aria-modal="true" aria-labelledby="status-title" @onclick:stopPropagation="true">
+            <h2 id="status-title">Status</h2>
+            <p>@status.Headline</p>
+            <div class="status-scroll">
+                <table class="status-table">
+                    <thead><tr><th>Folder</th><th class="num">Files left</th><th class="num">Size</th><th>Status</th><th>What is left</th></tr></thead>
+                    <tbody>
+                        @foreach (var f in status.Folders.OrderBy(f => f.Exists && f.Files.Count > 0 ? 0 : f.Exists ? 1 : 2).ThenBy(f => f.Name, StringComparer.OrdinalIgnoreCase))
+                        {
+                            <tr>
+                                <td title="@f.Name">@f.Name</td>
+                                <td class="num">@(f.Exists ? f.Files.Count.ToString("N0") : "-")</td>
+                                <td class="num">@(f.Exists ? Fmt.Size(f.Bytes) : "-")</td>
+                                <td class="@(f.IsEmpty ? "st-empty" : f.Exists ? "st-left" : "")">@f.Status</td>
+                                <td class="muted" title="@f.Details()">@f.Details()</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            @if (statusNote.Length > 0) { <p class="muted" role="status">@statusNote</p> }
+            <div class="buttons">
+                <button class="danger" disabled="@(!status.CanDeleteEmpty)" @onclick="DeleteEmptyFolders" title="Deletes the folders with no file left in them (and their empty sub-folders) from the drive, and takes them out of this list">Delete empty folders</button>
+                <button @onclick="() => showStatus = false">Close</button>
+            </div>
+        </div>
+    </div>
+}
+
 <PlayerDialog Src="@(playing == null ? null : $"media/{IndexOf(playing)}")" Title="@(playing?.FileName ?? "")" OnClose="() => playing = null" />
 
 <DeleteFileDialog Decision="deleting" OnCancel="() => deleting = null" OnDone="Deleted" />
@@ -149,7 +175,8 @@
     private List<FileDecision> all = new();
     private Dictionary<FileDecision, int> index = new();
     private string filter = "", search = "";
-    private bool alsoRename, confirming;
+    private bool alsoRename, confirming, showStatus;
+    private string statusNote = "";
     private int shown = 200;
     private string? scriptsText, toast;
     private FileDecision? playing, deleting;
@@ -231,6 +258,13 @@
         ShowToast(text, report.Messages.Count > 0 ? 10000 : 5000);
     }
 
+    // Delete confirmation on (the default): the dialog asks. Off: the file is deleted at once.
+    private void AskDelete(FileDecision d)
+    {
+        if (App.Settings.Opt.ConfirmDelete) deleting = d;
+        else Deleted(App.DeleteFile(d));
+    }
+
     private void Deleted((bool Ok, string Message) result)
     {
         deleting = null;
@@ -244,6 +278,20 @@
         string text = report.Summary;
         if (report.Messages.Count > 0) text += " " + string.Join(" ", report.Messages.Take(2)) + (report.Messages.Count > 2 ? $" (and {report.Messages.Count - 2} more)" : "");
         ShowToast(text, report.Messages.Count > 0 ? 12000 : 6000);
+        // Folders were opened (Process folders): the Status window shows what is left in them
+        if (App.LastLeftovers != null) { statusNote = ""; showStatus = true; }
+    }
+
+    // "Delete empty folders": deletes the folders with no file left from the drive and takes them out of the overview
+    private void DeleteEmptyFolders()
+    {
+        var result = App.DeleteEmptyFolders();
+        var parts = new List<string>();
+        if (result.Deleted.Count > 0) parts.Add($"Deleted {Fmt.Plural(result.Deleted.Count, "empty folder", "empty folders")}.");
+        if (result.Messages.Count > 0) parts.Add(string.Join(" ", result.Messages.Take(3)));
+        if (parts.Count == 0) parts.Add("There was no empty folder.");
+        statusNote = string.Join(" ", parts);
+        if (App.LastLeftovers == null) { showStatus = false; ShowToast(statusNote + " Nothing more to show.", 6000); }
     }
 
     private void CreateScripts()

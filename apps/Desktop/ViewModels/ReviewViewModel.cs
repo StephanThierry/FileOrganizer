@@ -6,6 +6,9 @@ using CommunityToolkit.Mvvm.Input;
 
 namespace FileOrganizer.Desktop.ViewModels;
 
+/// <summary>One folder that was opened, as a line in the Status window.</summary>
+public sealed record StatusRow(string Folder, string Left, string Size, string Status, string Details, bool IsEmpty, bool HasFiles);
+
 /// <summary>The files that will move: each with its category, why, and a choice to send it elsewhere or leave it.</summary>
 public partial class ReviewViewModel : ViewModelBase
 {
@@ -32,18 +35,51 @@ public partial class ReviewViewModel : ViewModelBase
     [ObservableProperty] private string? scriptsText;
     [ObservableProperty] private string? scriptsFolder;
 
-    // What is left in the folders that were opened (Process folders), after files were moved or deleted
-    public ObservableCollection<string> LeftoverLines { get; } = new();
+    // The Status window: what is left in the folders that were opened (Process folders), after files were moved or deleted
+    public ObservableCollection<StatusRow> StatusRows { get; } = new();
+    /// <summary>There is something to show (the Status button is there).</summary>
     [ObservableProperty] private bool hasLeftovers;
-    [ObservableProperty] private string leftoverHeadline = "";
+    [ObservableProperty] private bool statusVisible;
+    [ObservableProperty] private string statusHeadline = "";
+    [ObservableProperty] private bool canDeleteEmpty;
+    [ObservableProperty] private string statusNote = "";
+    public bool HasStatusNote => StatusNote.Length > 0;
+    partial void OnStatusNoteChanged(string value) => OnPropertyChanged(nameof(HasStatusNote));
 
     private void ShowLeftovers()
     {
         var report = app.LastLeftovers;
         HasLeftovers = report != null;
-        LeftoverHeadline = report?.Headline ?? "";
-        LeftoverLines.Clear();
-        if (report != null) foreach (var line in report.Lines()) LeftoverLines.Add(line);
+        StatusRows.Clear();
+        if (report == null) { StatusHeadline = ""; CanDeleteEmpty = false; StatusVisible = false; return; }
+        StatusHeadline = report.Headline;
+        CanDeleteEmpty = report.CanDeleteEmpty;
+        foreach (var f in report.Folders.OrderBy(f => f.Exists && f.Files.Count > 0 ? 0 : f.Exists ? 1 : 2).ThenBy(f => f.Name, StringComparer.OrdinalIgnoreCase))
+            StatusRows.Add(new StatusRow(f.Name, f.Exists ? f.Files.Count.ToString("N0") : "-", f.Exists ? Fmt.Size(f.Bytes) : "-", f.Status, f.Details(), f.IsEmpty, f.Exists && f.Files.Count > 0));
+    }
+
+    [RelayCommand]
+    private void OpenStatus()
+    {
+        StatusNote = "";
+        ShowLeftovers();
+        StatusVisible = HasLeftovers;
+    }
+
+    [RelayCommand] private void CloseStatus() => StatusVisible = false;
+
+    // "Delete empty folders": deletes the folders with no file left from the drive and takes them out of the overview
+    [RelayCommand]
+    private void DeleteEmptyFolders()
+    {
+        var result = app.DeleteEmptyFolders();
+        ShowLeftovers();
+        var parts = new List<string>();
+        if (result.Deleted.Count > 0) parts.Add($"Deleted {Fmt.Plural(result.Deleted.Count, "empty folder", "empty folders")}.");
+        if (result.Messages.Count > 0) parts.Add(string.Join(" ", result.Messages.Take(3)));
+        if (parts.Count == 0) parts.Add("There was no empty folder.");
+        StatusNote = HasLeftovers ? string.Join(" ", parts) : "";
+        if (!HasLeftovers) ShowToast(string.Join(" ", parts) + " Nothing more to show.", 6000);
     }
 
     public bool HasScripts => ScriptsText != null;
@@ -53,6 +89,7 @@ public partial class ReviewViewModel : ViewModelBase
     {
         this.app = app;
         this.main = main;
+        BindConfirmDelete(app);
         app.ResultChanged += () => Dispatcher.UIThread.Post(Reload);
         app.SettingsChanged += () => Dispatcher.UIThread.Post(RefreshChoices);
         RefreshChoices();
@@ -63,11 +100,17 @@ public partial class ReviewViewModel : ViewModelBase
     partial void OnSearchChanged(string value) => Filter();
     partial void OnScriptsTextChanged(string? value) => OnPropertyChanged(nameof(HasScripts));
 
+    // Saving any setting (e.g. "Delete confirmation") comes here too. The list is only rebuilt when the categories really changed: clearing it
+    // makes every "Goes to" drop-down lose its choice (it reads as "Leave here", and the files would no longer move).
     private void RefreshChoices()
     {
+        var names = new List<string> { LeaveHere };
+        names.AddRange(app.CategoryNames());
+        if (Choices.SequenceEqual(names)) return;
+        foreach (var row in rows.Values) row.Updating = true;
         Choices.Clear();
-        Choices.Add(LeaveHere);
-        foreach (var c in app.CategoryNames()) Choices.Add(c);
+        foreach (var c in names) Choices.Add(c);
+        foreach (var row in rows.Values) { row.Updating = false; row.Refresh(); }   // every row shows the choice of its decision again
     }
 
     /// <summary>Takes the files from the result: those that go somewhere by the rules or by the user's choice.</summary>
@@ -148,6 +191,8 @@ public partial class ReviewViewModel : ViewModelBase
         string text = report.Summary;
         if (report.Messages.Count > 0) text += " " + string.Join(" ", report.Messages.Take(2)) + (report.Messages.Count > 2 ? $" (and {report.Messages.Count - 2} more)" : "");
         ShowToast(text, report.Messages.Count > 0 ? 12000 : 6000);
+        // Folders were opened (Process folders): the Status window shows what is left in them
+        if (app.LastLeftovers != null) OpenStatus();
     }
 
     [RelayCommand]
@@ -180,6 +225,8 @@ public partial class FileRow : ObservableObject
     private readonly ThumbLoader thumb;
     private readonly ThumbLoader[] parts = new ThumbLoader[Thumbnails.Parts];
     private bool settingChoice;
+    /// <summary>True while the list of categories is rebuilt: the drop-down is emptied then, which is not a choice of the user.</summary>
+    public bool Updating { get; set; }
 
     public FileDecision Decision { get; }
     public ObservableCollection<string> Choices { get; }
@@ -252,7 +299,7 @@ public partial class FileRow : ObservableObject
     // The user sends the file elsewhere, or leaves it
     partial void OnChoiceChanged(string value)
     {
-        if (settingChoice || value == null) return;
+        if (settingChoice || Updating || value == null) return;
         Decision.Choose(value);
         IsLeft = Decision.EffectiveCategory == null;
         CanMove = !Decision.Done && Decision.EffectiveCategory != null;

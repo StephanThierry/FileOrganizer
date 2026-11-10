@@ -166,3 +166,89 @@ public class ProcessFoldersTests : IDisposable
         Assert.Contains("President Curtis", script);                    // the target is the category folder
     }
 }
+
+public class DeleteEmptyFoldersTests : IDisposable
+{
+    private readonly string dir = Path.Combine(Path.GetTempPath(), "fo-empty-" + Guid.NewGuid().ToString("N"));
+    public DeleteEmptyFoldersTests() => Directory.CreateDirectory(dir);
+    public void Dispose() { try { Directory.Delete(dir, true); } catch { } }
+
+    private void Folder(string relative) => Directory.CreateDirectory(Path.Combine(dir, relative));
+    private void File_(string relative) { Folder(Path.GetDirectoryName(relative)!); File.WriteAllText(Path.Combine(dir, relative), "x"); }
+    private LeftoverReport Report(params string[] names) => FolderLeftovers.Build(dir, names);
+
+    [Fact]
+    public void AnEmptyFolder_AndItsEmptySubFolders_AreDeleted_AFolderWithAFileStays()
+    {
+        Folder(Path.Combine("A", "Subs", "deep"));                   // empty, with empty sub-folders
+        File_(Path.Combine("B", "notes.txt"));                       // a file is left
+        Folder("C");                                                 // empty
+        var report = Report("A", "B", "C", "Gone");                  // "Gone" does not exist
+        Assert.True(report.CanDeleteEmpty);
+        Assert.Equal(new[] { "A", "C" }, report.Folders.Where(f => f.IsEmpty).Select(f => f.Name).OrderBy(x => x));
+
+        var result = FolderLeftovers.DeleteEmpty(dir, report);
+
+        Assert.Equal(new[] { "A", "C" }, result.Deleted.OrderBy(x => x));
+        Assert.Empty(result.Messages);
+        Assert.False(Directory.Exists(Path.Combine(dir, "A")));       // gone from the drive, with its empty sub-folders
+        Assert.False(Directory.Exists(Path.Combine(dir, "C")));
+        Assert.True(File.Exists(Path.Combine(dir, "B", "notes.txt"))); // never touched
+    }
+
+    [Fact]
+    public void AFolderThatHasGotAFileSinceTheReport_IsLookedAtAgain_AndStays()
+    {
+        Folder(Path.Combine("A", "Subs"));
+        var report = Report("A");
+        Assert.True(report.Folders[0].IsEmpty);
+        File_(Path.Combine("A", "Subs", "late.srt"));                // a file appears after the report was made
+
+        var result = FolderLeftovers.DeleteEmpty(dir, report);
+
+        Assert.Empty(result.Deleted);
+        Assert.Contains(result.Messages, m => m.Contains("a file has appeared"));
+        Assert.True(File.Exists(Path.Combine(dir, "A", "Subs", "late.srt")));
+    }
+
+    [Fact]
+    public void OnlyFoldersDirectlyInsideTheScannedFolder_AreEverDeleted()
+    {
+        Folder("Outer");
+        Folder(Path.Combine("Outer", "Inner"));
+        string sibling = dir + "-sibling";
+        Directory.CreateDirectory(sibling);
+        try
+        {
+            // A report that names paths leading out of the scanned folder, or deeper inside it
+            var report = new LeftoverReport(dir, new[]
+            {
+                new FolderLeftover(Path.Combine("..", Path.GetFileName(sibling)), true, Array.Empty<LeftoverFile>(), Array.Empty<string>()),
+                new FolderLeftover(Path.Combine("Outer", "Inner"), true, Array.Empty<LeftoverFile>(), Array.Empty<string>()),
+                new FolderLeftover("", true, Array.Empty<LeftoverFile>(), Array.Empty<string>()),
+            });
+            var result = FolderLeftovers.DeleteEmpty(dir, report);
+            Assert.Empty(result.Deleted);
+            Assert.Equal(3, result.Messages.Count);
+            Assert.True(Directory.Exists(sibling));
+            Assert.True(Directory.Exists(Path.Combine(dir, "Outer", "Inner")));
+            Assert.True(Directory.Exists(dir));
+        }
+        finally { try { Directory.Delete(sibling, true); } catch { } }
+    }
+
+    [Fact]
+    public void TheTableTexts_AreCompact()
+    {
+        File_(Path.Combine("A", "one.txt")); File_(Path.Combine("A", "two.txt")); File_(Path.Combine("A", "Subs", "three.srt")); File_(Path.Combine("A", "four.nfo"));
+        Folder(Path.Combine("A", "Empty"));
+        Folder("B");
+        var report = Report("A", "B", "Gone");
+        var a = report.Folders.Single(f => f.Name == "A");
+        Assert.Equal("Files left", a.Status);
+        Assert.Equal($"four.nfo, one.txt, {Path.Combine("Subs", "three.srt")} (+1 more); 1 empty sub-folder", a.Details());
+        Assert.Equal("Empty", report.Folders.Single(f => f.Name == "B").Status);
+        Assert.Equal("nothing left", report.Folders.Single(f => f.Name == "B").Details());
+        Assert.Equal(("Gone", "deleted"), (report.Folders.Single(f => f.Name == "Gone").Status, report.Folders.Single(f => f.Name == "Gone").Details()));
+    }
+}

@@ -11,6 +11,20 @@ public sealed record FolderLeftover(string Name, bool Exists, IReadOnlyList<Left
     /// <summary>The folder is there and no file is left in it (it could be deleted).</summary>
     public bool IsEmpty => Exists && Files.Count == 0;
 
+    /// <summary>A short status for a table: "Empty", "Files left" or "Gone".</summary>
+    public string Status => !Exists ? "Gone" : Files.Count == 0 ? "Empty" : "Files left";
+
+    /// <summary>What is left, compact, for a table: the first file names and the empty sub-folders (nothing for a folder that is gone).</summary>
+    public string Details(int show = 3)
+    {
+        if (!Exists) return "deleted";
+        var parts = new List<string>();
+        if (Files.Count > 0)
+            parts.Add(string.Join(", ", Files.Take(show).Select(f => f.Path)) + (Files.Count > show ? $" (+{Files.Count - show:N0} more)" : ""));
+        if (EmptyFolders.Count > 0) parts.Add(Fmt.Plural(EmptyFolders.Count, "empty sub-folder", "empty sub-folders"));
+        return parts.Count == 0 ? "nothing left" : string.Join("; ", parts);
+    }
+
     /// <summary>One line for the folder, with the first <paramref name="show"/> files that are left.</summary>
     public string Line(int show = 6)
     {
@@ -27,6 +41,9 @@ public sealed record FolderLeftover(string Name, bool Exists, IReadOnlyList<Left
 public sealed record LeftoverReport(string Root, IReadOnlyList<FolderLeftover> Folders)
 {
     public int EmptyCount => Folders.Count(f => f.IsEmpty);
+
+    /// <summary>At least one folder is empty: "Delete empty folders" has something to do.</summary>
+    public bool CanDeleteEmpty => Folders.Any(f => f.IsEmpty);
     public int GoneCount => Folders.Count(f => !f.Exists);
     public int FilesLeft => Folders.Sum(f => f.Files.Count);
     public long BytesLeft => Folders.Sum(f => f.Bytes);
@@ -51,8 +68,45 @@ public sealed record LeftoverReport(string Root, IReadOnlyList<FolderLeftover> F
         Folders.OrderBy(f => f.Exists && f.Files.Count > 0 ? 0 : f.Exists ? 1 : 2).ThenBy(f => f.Name, StringComparer.OrdinalIgnoreCase).Select(f => f.Line(show)).ToList();
 }
 
+/// <summary>What "Delete empty folders" did: the folders it deleted, and what it did not do (and why).</summary>
+public sealed record EmptyFoldersResult(IReadOnlyList<string> Deleted, IReadOnlyList<string> Messages);
+
 public static class FolderLeftovers
 {
+    /// <summary>
+    /// Deletes the folders of the report that are empty (no file left in them or their sub-folders, which then go too). Each folder is looked at
+    /// again right before it is deleted: one that has got a file since stays. Only folders directly inside <paramref name="root"/> are touched.
+    /// </summary>
+    public static EmptyFoldersResult DeleteEmpty(string root, LeftoverReport report)
+    {
+        var deleted = new List<string>();
+        var messages = new List<string>();
+        string fullRoot = Path.GetFullPath(root).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        var options = new EnumerationOptions { RecurseSubdirectories = true, IgnoreInaccessible = true, AttributesToSkip = 0 };
+        foreach (var folder in report.Folders.Where(f => f.IsEmpty))
+        {
+            string path = Path.GetFullPath(Path.Combine(root, folder.Name));
+            // Only a folder directly inside the scanned folder, never a path that leads out of it
+            if (!string.Equals((Path.GetDirectoryName(path) ?? "").TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar), fullRoot, StringComparison.OrdinalIgnoreCase) || folder.Name.Length == 0 || folder.Name is "." or "..")
+            {
+                messages.Add($"{folder.Name}: not a folder directly inside {root}, left alone.");
+                continue;
+            }
+            try
+            {
+                if (!Directory.Exists(path)) { deleted.Add(folder.Name); continue; }   // already gone
+                if (Directory.EnumerateFiles(path, "*", options).Any()) { messages.Add($"{folder.Name}: a file has appeared in it, so it stays."); continue; }
+                Directory.Delete(path, recursive: true);
+                deleted.Add(folder.Name);
+            }
+            catch (Exception e)
+            {
+                messages.Add($"{folder.Name}: {e.Message}");
+            }
+        }
+        return new EmptyFoldersResult(deleted, messages);
+    }
+
     /// <summary>Looks in the folders (names inside <paramref name="root"/>) and lists what is still there. Only reads.</summary>
     public static LeftoverReport Build(string root, IEnumerable<string> folderNames)
     {
